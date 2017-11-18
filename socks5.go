@@ -6,6 +6,8 @@ import (
 	"os"
 	e "errors"
 	"github.com/daemon369/go-socks5/auth/auth"
+	_ "github.com/daemon369/go-socks5/auth/noauth"
+	_ "github.com/daemon369/go-socks5/auth/reject"
 )
 
 var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
