@@ -137,7 +137,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 			logger.Printf("%d: number of methods(%d) not match methods length(%d)", serial, ver[1], n-2)
 		}
 
-		a = server.chooseAuthenticator(ver[2:])
+		a = server.chooseAuthenticator(ver[2:n])
 
 		if a == nil {
 			logger.Printf("%d: can't find authenticator", serial)
