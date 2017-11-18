@@ -3,7 +3,7 @@ package auth
 import (
 	"net"
 	"fmt"
-	e "github.com/daemon369/go-socks5/error"
+	e "errors"
 )
 
 // provide user auth

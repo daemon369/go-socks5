@@ -4,7 +4,7 @@ import (
 	"net"
 	"log"
 	"os"
-	e "github.com/daemon369/go-socks5/error"
+	e "errors"
 	"github.com/daemon369/go-socks5/auth/auth"
 	"github.com/daemon369/go-socks5/auth/reject"
 )
@@ -101,7 +101,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 	ver := make([]byte, 257)
 
-	_, err = conn.Read(ver)
+	n, err := conn.Read(ver)
 	if err != nil {
 		logger.Printf("%d: read protocol version failed: %s", serial, err)
 		return err
@@ -114,27 +114,29 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		return e.New("unsupported protocol version")
 	}
 
-	if len(ver) < 3 || ver[1] == 0 {
+	if n < 3 || ver[1] == 0 {
 		logger.Printf("%d: no methods provided", serial)
 		return e.New("no methods provided")
 	}
 
-	if int(ver[1]) != len(ver)-2 {
-		logger.Printf("%d: number of methods(%d) not match methods length(%d)", serial, ver[1], len(ver)-2)
+	if int(ver[1]) != n-2 {
+		logger.Printf("%d: number of methods(%d) not match methods length(%d)", serial, ver[1], n-2)
 	}
 
 	a := server.chooseAuthentication(ver[2:])
 
-	if a == nil {
+	if a == nil || a.Method() == 0xff {
 		conn.Write([]byte{0x05, 0xff})
 		return nil
 	}
 
-	if _, ok := a.(reject.Reject); !ok {
+	conn.Write([]byte{5, byte(a.Method())})
+
+	n, err = conn.Read(ver)
+
+	if err != nil {
 
 	}
-
-	conn.Write([]byte{5, byte(a.Method())})
 
 	if a.Authenticate(conn, serial) != nil {
 		logger.Printf("%d: authenticate failed", serial)

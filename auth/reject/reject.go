@@ -2,7 +2,7 @@ package reject
 
 import (
 	"net"
-	e "github.com/daemon369/go-socks5/error"
+	e "errors"
 	"github.com/daemon369/go-socks5/auth/auth"
 )
 
