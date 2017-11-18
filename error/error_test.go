@@ -1,8 +1,8 @@
 package error
 
 import (
-"testing"
-"fmt"
+	"testing"
+	"fmt"
 )
 
 func Test_err(t *testing.T) {
