@@ -6,6 +6,25 @@ import (
 	e "errors"
 )
 
+/*
+	X'00' NO AUTHENTICATION REQUIRED
+	X'01' GSSAPI
+	X'02' USERNAME/PASSWORD
+	X'03' to X'7F' IANA ASSIGNED
+	X'80' to X'FE' RESERVED FOR PRIVATE METHODS
+	X'FF' NO ACCEPTABLE METHODS
+ */
+const (
+	NO_AUTH           = 0x00
+	GSSAPI            = 0x01
+	USERNAME_PASSWORD = 0x02
+	IANA_MIN          = 0x03
+	IANA_MAX          = 0x7F
+	PRIVATE_MIN       = 0x80
+	PRIVATE_MAX       = 0xFE
+	NO_ACCEPTABLE     = 0xFF
+)
+
 // provide user auth
 type Authenticator interface {
 	// get method id

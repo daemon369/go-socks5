@@ -8,24 +8,37 @@ import (
 	"github.com/daemon369/go-socks5/auth/auth"
 	_ "github.com/daemon369/go-socks5/auth/noauth"
 	_ "github.com/daemon369/go-socks5/auth/reject"
+	"github.com/daemon369/go-socks5/cmd"
+	"github.com/daemon369/go-socks5/address"
 )
-
-var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
 
 const (
 	PROTOCOL_VERSION = 0x05
 )
 
+var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
+
 type Server struct {
+	// server listen address
 	address string
+	// strict mode flag
+	strictMode bool
 }
 
 func New(address string) *Server {
-	return &Server{address}
+	return &Server{address, false}
 }
 
 func Serve(server Server) {
 	server.Serve()
+}
+
+func (s *Server) SetStrictMode(strict bool) {
+	s.strictMode = strict
+}
+
+func (s *Server) GetStrictMode() bool {
+	return s.strictMode
 }
 
 func (server *Server) Serve() {
@@ -93,8 +106,6 @@ func handleConnection(server *Server, conn net.Conn, serial int) {
 
 func handle(server *Server, conn net.Conn, serial int) (err error) {
 
-	// buffer
-	ver := make([]byte, 257)
 	// read length
 	var n = 0
 
@@ -119,31 +130,34 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 	*/
 
 	for {
-		n, err = conn.Read(ver)
+		// buffer
+		buf := make([]byte, 257)
+
+		n, err = conn.Read(buf)
 		if err != nil {
 			logger.Printf("%d: read protocol version failed: %s", serial, err)
 			break
 		}
 
-		logger.Printf("%d: protocol verison: %v", serial, ver[0])
+		logger.Printf("%d: protocol verison: %v", serial, buf[0])
 
-		if PROTOCOL_VERSION != ver[0] {
+		if PROTOCOL_VERSION != buf[0] {
 			logger.Printf("%d: unsupported protocol version", serial)
 			err = e.New(string(serial) + ": unsupported protocol version")
 			break
 		}
 
-		if n < 3 || ver[1] == 0 {
+		if n < 3 || buf[1] == 0 {
 			logger.Printf("%d: no methods provided", serial)
 			err = e.New(string(serial) + ": no methods provided")
 			break
 		}
 
-		if int(ver[1]) != n-2 {
-			logger.Printf("%d: number of methods(%d) not match methods length(%d)", serial, ver[1], n-2)
+		if int(buf[1]) != n-2 {
+			logger.Printf("%d: number of methods(%d) not match methods length(%d)", serial, buf[1], n-2)
 		}
 
-		a = server.chooseAuthenticator(ver[2:n])
+		a = server.chooseAuthenticator(buf[2:n])
 
 		if a == nil {
 			logger.Printf("%d: can't find authenticator", serial)
@@ -151,7 +165,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		if a.Method() == 0xff {
+		if auth.NO_ACCEPTABLE == a.Method() {
 			logger.Printf("%d: choose reject authenticator", serial)
 			err = e.New(string(serial) + ": choose reject authenticator")
 			break
@@ -183,16 +197,69 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 	| 1  |  1  | X'00' |  1   | Variable |    2     |
 	+----+-----+-------+------+----------+----------+
 	*/
-	n, err = conn.Read(ver)
+	// buffer
+	buf := make([]byte, 4)
+	n, err = conn.Read(buf)
 
 	if err != nil {
 		logger.Printf("%d: read client request failed: %v", serial, err)
 		return err
 	}
 
-	if PROTOCOL_VERSION != ver[0] {
+	if PROTOCOL_VERSION != buf[0] {
 		logger.Printf("%d: unsupported protocol version", serial)
-		return e.New(string(serial) + ": unsupported protocol version: " + string(ver[0]))
+		return e.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
+	}
+
+	if !cmd.VerifyCmd(buf[1]) {
+		err = e.New(string(serial) + ": unsupported cmd: " + string(buf[1]))
+		logger.Println(err)
+		return err
+	}
+
+	logger.Printf("%d: cmd: %d", serial, buf[1])
+
+	if 0 != buf[2] {
+		err = e.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
+		logger.Println(err)
+		if server.strictMode {
+			return err
+		}
+	}
+
+	var addressType = buf[3]
+
+	switch (addressType) {
+	case address.IPV4:
+		n, err = conn.Read(buf)
+		if err != nil {
+			logger.Printf("%d: read IPV4 address error", serial)
+			return err
+		}
+		if n != 4 {
+			err = e.New(string(serial) + ": read IPV4 address error")
+			logger.Println(err)
+			return err
+		}
+
+	case address.FQDN:
+
+	case address.IPV6:
+		buf = make([]byte, 16)
+		n, err = conn.Read(buf)
+		if err != nil {
+			logger.Printf("%d: read IPV6 address error", serial)
+			return err
+		}
+		if n != 16 {
+			err = e.New(string(serial) + ": read IPV6 address error")
+			logger.Println(err)
+			return err
+		}
+	default:
+		err = e.New(string(serial) + ": unsupported cmd: " + string(buf[1]))
+		logger.Println(err)
+		return err
 	}
 
 	return nil
