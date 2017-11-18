@@ -12,6 +12,10 @@ import (
 
 var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
 
+const (
+	PROTOCOL_VERSION = 0x05
+)
+
 type Server struct {
 	address string
 }
@@ -123,7 +127,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 		logger.Printf("%d: protocol verison: %v", serial, ver[0])
 
-		if 5 != ver[0] {
+		if PROTOCOL_VERSION != ver[0] {
 			logger.Printf("%d: unsupported protocol version", serial)
 			err = e.New(string(serial) + ": unsupported protocol version")
 			break
@@ -153,26 +157,42 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		conn.Write([]byte{0x05, byte(a.Method())})
-
-		n, err = conn.Read(ver)
-
-		if err != nil {
-
-		}
-
-		if a.Authenticate(conn, serial) != nil {
-			logger.Printf("%d: authenticate failed", serial)
-			err = e.New("authenticate failed")
-			break
-		}
+		conn.Write([]byte{PROTOCOL_VERSION, byte(a.Method())})
 
 		break
 	}
 
 	if err != nil {
-		conn.Write([]byte{0x05, 0xff})
+		conn.Write([]byte{PROTOCOL_VERSION, 0xff})
 		return err
+	}
+
+	/*
+	3. authenticate user
+	*/
+	if a.Authenticate(conn, serial) != nil {
+		logger.Printf("%d: authenticate failed", serial)
+		return e.New(string(serial) + ": authenticate failed")
+	}
+
+	/*
+	4. handle client request
+	+----+-----+-------+------+----------+----------+
+	|VER | CMD |  RSV  | ATYP | DST.ADDR | DST.PORT |
+	+----+-----+-------+------+----------+----------+
+	| 1  |  1  | X'00' |  1   | Variable |    2     |
+	+----+-----+-------+------+----------+----------+
+	*/
+	n, err = conn.Read(ver)
+
+	if err != nil {
+		logger.Printf("%d: read client request failed: %v", serial, err)
+		return err
+	}
+
+	if PROTOCOL_VERSION != ver[0] {
+		logger.Printf("%d: unsupported protocol version", serial)
+		return e.New(string(serial) + ": unsupported protocol version: " + string(ver[0]))
 	}
 
 	return nil
