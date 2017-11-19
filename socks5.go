@@ -43,10 +43,6 @@ func New(address string) *Server {
 	return &Server{address, false}
 }
 
-func Serve(server Server) {
-	server.Serve()
-}
-
 func (server *Server) SetStrictMode(strict bool) {
 	server.strictMode = strict
 }
