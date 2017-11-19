@@ -1,17 +1,17 @@
 package go_socks5
 
 import (
-	"net"
-	"log"
-	"os"
+	"errors"
 	"io"
-	e "errors"
+	"log"
+	"net"
+	"os"
+	"strconv"
 	_ "github.com/daemon369/go-socks5/auth/noauth"
 	_ "github.com/daemon369/go-socks5/auth/reject"
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/address"
-	"strconv"
 )
 
 const (
@@ -153,7 +153,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		logger.Printf("%d: protocol verison: %v, methods number: %v", serial, buf[0], buf[1])
 
 		if ProtocolVersion != buf[0] {
-			err = e.New(string(serial) + ": unsupported protocol version")
+			err = errors.New(string(serial) + ": unsupported protocol version")
 			logger.Printf(err.Error())
 			break
 		}
@@ -161,7 +161,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		methodsNum := buf[1]
 
 		if 0 == methodsNum {
-			err = e.New(string(serial) + ": no methods provided")
+			err = errors.New(string(serial) + ": no methods provided")
 			logger.Printf(err.Error())
 			break
 		}
@@ -174,13 +174,13 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		a = server.chooseAuthenticator(buf[:methodsNum])
 
 		if a == nil {
-			err = e.New(string(serial) + ": can't find authenticator")
+			err = errors.New(string(serial) + ": can't find authenticator")
 			logger.Printf(err.Error())
 			break
 		}
 
 		if auth.NO_ACCEPTABLE == a.Method() {
-			err = e.New(string(serial) + ": choose reject authenticator")
+			err = errors.New(string(serial) + ": choose reject authenticator")
 			logger.Printf(err.Error())
 			break
 		}
@@ -199,7 +199,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 	3. authenticate
 	*/
 	if a.Authenticate(conn, serial) != nil {
-		err = e.New(string(serial) + ": authenticate failed")
+		err = errors.New(string(serial) + ": authenticate failed")
 		logger.Printf(err.Error())
 		return err
 	}
@@ -224,7 +224,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 		if ProtocolVersion != buf[0] {
 			rspCode = ServerError
-			err = e.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
+			err = errors.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
 			logger.Printf(err.Error())
 			break
 		}
@@ -234,7 +234,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 		if !cmd.VerifyCmd(command) {
 			rspCode = CommandUnsupported
-			err = e.New(string(serial) + ": unsupported cmd: " + string(command))
+			err = errors.New(string(serial) + ": unsupported cmd: " + string(command))
 			logger.Println(err)
 			break
 		}
@@ -242,7 +242,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		logger.Printf("%d: cmd: %d", serial, command)
 
 		if 0 != buf[2] {
-			err = e.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
+			err = errors.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
 			logger.Println(err)
 			if server.strictMode {
 				rspCode = ServerError
@@ -272,7 +272,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		if !address.Support(addressType) {
 			rspCode = AddressTypeUnsupported
 			if err == nil {
-				err = e.New(string(serial) + ": unsupported address type: " + string(addressType))
+				err = errors.New(string(serial) + ": unsupported address type: " + string(addressType))
 			}
 			logger.Println(err.Error())
 			break
@@ -304,7 +304,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 		if port <= 0 || port > 0xFFFF {
 			rspCode = HostUnreachable
-			err = e.New(string(serial) + ": port number out of range: " + string(port))
+			err = errors.New(string(serial) + ": port number out of range: " + string(port))
 			break
 		}
 

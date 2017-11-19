@@ -1,8 +1,8 @@
 package reject
 
 import (
+	"errors"
 	"net"
-	e "errors"
 	"github.com/daemon369/go-socks5/auth"
 )
 
@@ -19,7 +19,7 @@ func (r *Reject) Method() (methodId int) {
 }
 
 func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
-	return e.New("authenticate rejected for method[0xFF]")
+	return errors.New("authenticate rejected for method[0xFF]")
 }
 
 func New() *Reject {

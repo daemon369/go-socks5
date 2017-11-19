@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"net"
+	"errors"
 	"fmt"
-	e "errors"
+	"net"
 )
 
 /*
@@ -62,7 +62,7 @@ func Register(auth Authenticator) {
 func Get(methodId int) (auth Authenticator, err error) {
 	auth, ok := registerMap[methodId]
 	if !ok {
-		return nil, e.New("can't find Authenticator for method[" + string(methodId) + "]")
+		return nil, errors.New("can't find Authenticator for method[" + string(methodId) + "]")
 	}
 
 	return auth, nil
