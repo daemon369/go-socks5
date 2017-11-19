@@ -11,10 +11,23 @@ import (
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/address"
+	"strconv"
 )
 
 const (
 	ProtocolVersion = 0x05
+)
+
+const (
+	Success                = 0x00
+	ServerError            = 0x01
+	RefusedByRuleSet       = 0x02
+	NetworkUnreachable     = 0x03
+	HostUnreachable        = 0x04
+	ConnectionRefused      = 0x05
+	TTLTimeOut             = 0x06
+	CommandUnsupported     = 0x07
+	AddressTypeUnsupported = 0x08
 )
 
 var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
@@ -110,6 +123,8 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 	// buf
 	var buf []byte
 
+	var n int
+
 	var a auth.Authenticator
 
 	/*
@@ -202,65 +217,116 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 	+----+-----+-------+------+----------+----------+
 	*/
 
-	if _, err = io.ReadFull(conn, buf[:4]); err != nil {
-		logger.Printf("%d: read cmd & address type failed: %v", serial, err)
-		return err
-	}
+	var rspCode byte = Success
 
-	if ProtocolVersion != buf[0] {
-		err = e.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
-		logger.Printf(err.Error())
-		return err
-	}
-
-	// verify client request cmd
-	command := buf[1]
-
-	if !cmd.VerifyCmd(command) {
-		err = e.New(string(serial) + ": unsupported cmd: " + string(command))
-		logger.Println(err)
-		return err
-	}
-
-	logger.Printf("%d: cmd: %d", serial, command)
-
-	if 0 != buf[2] {
-		err = e.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
-		logger.Println(err)
-		if server.strictMode {
-			return err
+	for {
+		if _, err = io.ReadFull(conn, buf[:4]); err != nil {
+			rspCode = ServerError
+			logger.Printf("%d: read cmd & address type failed: %v", serial, err)
+			break
 		}
-	}
 
-	var addressType = buf[3]
-	var addressLen byte
-
-	switch addressType {
-	case address.IPv4:
-		addressLen = net.IPv4len
-
-	case address.FQDN:
-		if _, err = io.ReadFull(conn, buf[:1]); err != nil {
-			logger.Printf("%d: read FQDN address length error: %v", serial, err)
-			return err
+		if ProtocolVersion != buf[0] {
+			rspCode = ServerError
+			err = e.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
+			logger.Printf(err.Error())
+			break
 		}
-		addressLen = buf[0]
 
-	case address.IPv6:
-		addressLen = net.IPv6len
+		// verify client request cmd
+		command := buf[1]
 
-	default:
-		err = e.New(string(serial) + ": unsupported cmd: " + string(buf[1]))
-		logger.Println(err)
+		if !cmd.VerifyCmd(command) {
+			rspCode = CommandUnsupported
+			err = e.New(string(serial) + ": unsupported cmd: " + string(command))
+			logger.Println(err)
+			break
+		}
+
+		logger.Printf("%d: cmd: %d", serial, command)
+
+		if 0 != buf[2] {
+			err = e.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
+			logger.Println(err)
+			if server.strictMode {
+				rspCode = ServerError
+				break
+			}
+		}
+
+		var addressType = buf[3]
+		var addressLen byte = 0
+
+		switch addressType {
+		case address.IPv4:
+			addressLen = net.IPv4len
+
+		case address.FQDN:
+			if _, err = io.ReadFull(conn, buf[:1]); err != nil {
+				addressType = address.Unknown
+				logger.Printf("%d: read FQDN address length error: %v", serial, err)
+				break
+			}
+			addressLen = buf[0]
+
+		case address.IPv6:
+			addressLen = net.IPv6len
+		}
+
+		if !address.Support(addressType) {
+			rspCode = AddressTypeUnsupported
+			if err == nil {
+				err = e.New(string(serial) + ": unsupported address type: " + string(addressType))
+			}
+			logger.Println(err.Error())
+			break
+		}
+
+		hostSlice := make([]byte, addressLen)
+		host := ""
+
+		if n, err = io.ReadFull(conn, hostSlice); err != nil {
+			rspCode = ServerError
+			logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
+			break
+		}
+
+		switch addressType {
+		case address.IPv4, address.IPv6:
+			host = net.IP(hostSlice).String()
+		case address.FQDN:
+			host = string(hostSlice)
+		}
+
+		if _, err = io.ReadFull(conn, buf[:2]); err != nil {
+			rspCode = ServerError
+			logger.Printf("%d: read port error: %v", serial, err)
+			break
+		}
+
+		port := uint16(buf[0])<<8 | uint16(buf[1])
+
+		if port <= 0 || port > 0xFFFF {
+			rspCode = HostUnreachable
+			err = e.New(string(serial) + ": port number out of range: " + string(port))
+			break
+		}
+
+		portStr := strconv.Itoa(int(port))
+
+		addr := net.JoinHostPort(host, portStr)
+
+		logger.Printf("%d: remote address: %v", serial, addr)
+
+		break
+	}
+
+	if err != nil {
+		conn.Write([]byte{ProtocolVersion, rspCode, auth.NO_ACCEPTABLE})
 		return err
 	}
 
-	buf = make([]byte, addressLen)
-
-	if _, err = io.ReadFull(conn, buf); err != nil {
-		logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
-		return err
-	}
+	logger.Println(n)
 
 	return nil
 }
