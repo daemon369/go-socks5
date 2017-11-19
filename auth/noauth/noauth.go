@@ -2,7 +2,7 @@ package noauth
 
 import (
 	"net"
-	"github.com/daemon369/go-socks5/auth/auth"
+	"github.com/daemon369/go-socks5/auth"
 )
 
 func init() {

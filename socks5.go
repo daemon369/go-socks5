@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 	e "errors"
-	"github.com/daemon369/go-socks5/auth/auth"
 	_ "github.com/daemon369/go-socks5/auth/noauth"
 	_ "github.com/daemon369/go-socks5/auth/reject"
+	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/address"
 )

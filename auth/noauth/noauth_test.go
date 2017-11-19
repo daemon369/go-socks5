@@ -3,7 +3,7 @@ package noauth
 import (
 	"testing"
 	"fmt"
-	"github.com/daemon369/go-socks5/auth/auth"
+	"github.com/daemon369/go-socks5/auth"
 )
 
 func Test_noauth(t *testing.T) {
