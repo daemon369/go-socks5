@@ -2,6 +2,7 @@ package go_socks5
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -9,9 +10,9 @@ import (
 	"strconv"
 	_ "github.com/daemon369/go-socks5/auth/noauth"
 	_ "github.com/daemon369/go-socks5/auth/reject"
+	"github.com/daemon369/go-socks5/address"
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
-	"github.com/daemon369/go-socks5/address"
 )
 
 const (
@@ -37,10 +38,15 @@ type Server struct {
 	address string
 	// strict mode flag
 	strictMode bool
+	listener   net.Listener
 }
 
 func New(address string) *Server {
-	return &Server{address, false}
+	return &Server{address: address, strictMode: false}
+}
+
+func (server *Server) String() string {
+	return fmt.Sprintf("[address: %v]", server.address)
 }
 
 func (server *Server) SetStrictMode(strict bool) {
@@ -62,6 +68,10 @@ func (server *Server) Serve() {
 		return
 	}
 
+	server.listener = listener
+
+	defer func() { server.Shutdown() }()
+
 	var serial = 0
 
 	for {
@@ -69,21 +79,23 @@ func (server *Server) Serve() {
 
 		if err != nil {
 			logger.Println("accept failed: ", err)
-			return
+			continue
 		}
 
-		go handleConnection(server, conn, serial)
+		session := &session{server, serial, conn, nil}
+
+		go handleConnection(session)
 
 		serial++
 	}
 
-	if err != nil {
-		//logger.Println("connect failed")
-		return
+	logger.Printf("server[%v] shutdown", server)
+}
+
+func (server *Server) Shutdown() {
+	if server.listener != nil {
+		server.listener.Close()
 	}
-
-	//logger.Println("connect success")
-
 }
 
 func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator) {
@@ -96,30 +108,45 @@ func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator)
 	return nil
 }
 
-func handleConnection(server *Server, conn net.Conn, serial int) {
-	logger.Printf("%d: connection from %s\n", serial, conn.RemoteAddr().String())
+type session struct {
+	server     *Server
+	serial     int
+	clientConn net.Conn
+	targetConn net.Conn
+}
+
+func handleConnection(session *session) {
+	logger.Printf("%d: connection from %s\n", session.serial, session.clientConn.RemoteAddr().String())
 
 	defer func() {
-		err := conn.Close()
+		err := session.clientConn.Close()
 		if err != nil {
-			logger.Printf("%d: close conn : %s", serial, err)
+			logger.Printf("%d: close client conn : %s", session.serial, err)
+		}
+
+		if session.targetConn != nil {
+			err = session.targetConn.Close()
+			if err != nil {
+				logger.Printf("%d: close target conn : %s", session.serial, err)
+			}
 		}
 	}()
 
-	err := handle(server, conn, serial)
+	err := handle(session)
 	if err != nil {
-		logger.Printf("%d: handle: %v", serial, err)
+		logger.Printf("%d: handle: %v", session.serial, err)
 		return
 	}
 
 }
 
-func handle(server *Server, conn net.Conn, serial int) (err error) {
+func handle(session *session) (err error) {
+
+	conn := session.clientConn
+	serial := session.serial
 
 	// buf
 	var buf []byte
-
-	var n int
 
 	var a auth.Authenticator
 
@@ -171,7 +198,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		a = server.chooseAuthenticator(buf[:methodsNum])
+		a = session.server.chooseAuthenticator(buf[:methodsNum])
 
 		if a == nil {
 			err = errors.New(string(serial) + ": can't find authenticator")
@@ -303,7 +330,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		if 0 != buf[2] {
 			err = errors.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
 			logger.Println(err)
-			if server.strictMode {
+			if session.server.strictMode {
 				rspCode = ServerError
 				break
 			}
@@ -370,8 +397,7 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		// TODO only support connect for now
 		switch command {
 		case cmd.CONNECT:
-			var targetConn net.Conn
-			targetConn, err = net.Dial("tcp", addr)
+			session.targetConn, err = net.Dial("tcp", addr)
 
 			if err != nil {
 				rspCode = NetworkUnreachable
@@ -385,18 +411,20 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 			ch := make(chan int, 2)
 
-			go transport(conn, targetConn, ch)
-			go transport(targetConn, conn, ch)
+			go transport(session, conn, session.targetConn, ch)
+			go transport(session, session.targetConn, conn, ch)
 
 			<-ch
+			<-ch
 
-			conn.Close()
-			targetConn.Close()
+			logger.Println(serial, ": finish transmission")
+
 			return nil
 
 		default:
 			rspCode = ServerError
-			logger.Printf("%d: read port error: %v", serial, err)
+			err = errors.New(string(serial) + ": unsupported command: " + string(command))
+			logger.Printf(err.Error())
 			break
 		}
 
@@ -408,19 +436,17 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 		return err
 	}
 
-	logger.Println(n)
-
 	return nil
 }
 
-func transport(src, dst net.Conn, ch chan int) {
+func transport(session *session, src, dst net.Conn, ch chan int) {
 	n, err := io.Copy(src, dst)
 
 	if err != nil {
 		logger.Println(err)
 	}
 
-	logger.Println("transported: ", n)
+	logger.Println(session.serial, ": transported: ", n)
 
 	ch <- 1
 }
