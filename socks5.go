@@ -361,27 +361,66 @@ func handle(server *Server, conn net.Conn, serial int) (err error) {
 
 		port := uint16(buf[0])<<8 | uint16(buf[1])
 
-		if port <= 0 || port > 0xFFFF {
-			rspCode = HostUnreachable
-			err = errors.New(string(serial) + ": port number out of range: " + string(port))
-			break
-		}
-
 		portStr := strconv.Itoa(int(port))
 
 		addr := net.JoinHostPort(host, portStr)
 
 		logger.Printf("%d: remote address: %v", serial, addr)
 
+		// TODO only support connect for now
+		switch command {
+		case cmd.CONNECT:
+			var targetConn net.Conn
+			targetConn, err = net.Dial("tcp", addr)
+
+			if err != nil {
+				rspCode = NetworkUnreachable
+				break
+			}
+
+			if _, err = conn.Write(append([]byte{ProtocolVersion, 0, 0}, hostAndPort...)); err != nil {
+				rspCode = ServerError
+				break
+			}
+
+			ch := make(chan int, 2)
+
+			go transport(conn, targetConn, ch)
+			go transport(targetConn, conn, ch)
+
+			<-ch
+
+			conn.Close()
+			targetConn.Close()
+			return nil
+
+		default:
+			rspCode = ServerError
+			logger.Printf("%d: read port error: %v", serial, err)
+			break
+		}
+
 		break
 	}
 
 	if err != nil {
-		conn.Write([]byte{ProtocolVersion, rspCode, 0, 1, 0, 0, 0, 0, 0})
+		conn.Write(append([]byte{ProtocolVersion, rspCode, 0}, hostAndPort...))
 		return err
 	}
 
 	logger.Println(n)
 
 	return nil
+}
+
+func transport(src, dst net.Conn, ch chan int) {
+	n, err := io.Copy(src, dst)
+
+	if err != nil {
+		logger.Println(err)
+	}
+
+	logger.Println("transported: ", n)
+
+	ch <- 1
 }
