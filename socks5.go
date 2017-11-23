@@ -251,54 +251,6 @@ func handle(session *session) (err error) {
 
 	var rspCode byte = Success
 
-	// get local host & port
-	var localAddrType = address.Unknown
-	var localHost = "0.0.0.0"
-	var localIp = net.IP{}
-	var localPortStr = "0"
-	var localPort = 0
-
-	var hostAndPort []byte
-
-	localAddr := conn.LocalAddr()
-	if localAddr != nil {
-		localHost, localPortStr, err = net.SplitHostPort(conn.LocalAddr().String())
-
-		if err != nil {
-			logger.Printf("%d: get local address failed: %v", serial, err)
-		} else {
-
-			localAddrType, localHost, localIp, err = address.ParseAddress(localHost)
-
-			if localPort, err = strconv.Atoi(localPortStr); err != nil {
-				logger.Printf("%d: parse local address port failed: %v", serial, err)
-			}
-		}
-	} else {
-		logger.Printf("%d: can't get local address", serial)
-	}
-
-	switch localAddrType {
-	case address.IPv4:
-		hostAndPort = append(hostAndPort, address.IPv4)
-		hostAndPort = append(hostAndPort, localIp...)
-
-	case address.FQDN:
-		hostAndPort = append(hostAndPort, address.FQDN)
-		hostAndPort = append(hostAndPort, uint8(len(localHost)))
-		hostAndPort = append(hostAndPort, localHost...)
-
-	case address.IPv6:
-		hostAndPort = append(hostAndPort, address.IPv6)
-		hostAndPort = append(hostAndPort, localIp...)
-
-	default:
-		hostAndPort = append(hostAndPort, address.IPv4)
-		hostAndPort = append(hostAndPort, net.IPv4zero...)
-	}
-
-	hostAndPort = append(hostAndPort, byte(localPort>>8), byte(localPort))
-
 	for {
 		// read 4 byte to get the address type, and determine length of the address to read next
 		if _, err = io.ReadFull(conn, buf[:4]); err != nil {
@@ -404,7 +356,7 @@ func handle(session *session) (err error) {
 				break
 			}
 
-			if _, err = conn.Write(append([]byte{ProtocolVersion, 0, 0}, hostAndPort...)); err != nil {
+			if _, err = conn.Write(append([]byte{ProtocolVersion, 0, 0}, address.FromAddr(session.targetConn.LocalAddr())...)); err != nil {
 				rspCode = ServerError
 				break
 			}
@@ -432,7 +384,7 @@ func handle(session *session) (err error) {
 	}
 
 	if err != nil {
-		conn.Write(append([]byte{ProtocolVersion, rspCode, 0}, hostAndPort...))
+		conn.Write([]byte{ProtocolVersion, rspCode, 0, 1, 0, 0, 0, 0, 0, 0})
 		return err
 	}
 
