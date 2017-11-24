@@ -1,4 +1,4 @@
-package go_socks5
+package socks5
 
 import (
 	"testing"

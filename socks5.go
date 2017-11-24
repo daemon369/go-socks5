@@ -1,4 +1,4 @@
-package go_socks5
+package socks5
 
 import (
 	"errors"
@@ -8,27 +8,13 @@ import (
 	"net"
 	"os"
 	"strconv"
-	_ "github.com/daemon369/go-socks5/auth/noauth"
-	_ "github.com/daemon369/go-socks5/auth/reject"
 	"github.com/daemon369/go-socks5/address"
 	"github.com/daemon369/go-socks5/auth"
+	_ "github.com/daemon369/go-socks5/auth/noauth"
+	_ "github.com/daemon369/go-socks5/auth/reject"
 	"github.com/daemon369/go-socks5/cmd"
-)
-
-const (
-	ProtocolVersion = 0x05
-)
-
-const (
-	Success                = 0x00
-	ServerError            = 0x01
-	RefusedByRuleSet       = 0x02
-	NetworkUnreachable     = 0x03
-	HostUnreachable        = 0x04
-	ConnectionRefused      = 0x05
-	TTLTimeOut             = 0x06
-	CommandUnsupported     = 0x07
-	AddressTypeUnsupported = 0x08
+	"github.com/daemon369/go-socks5/cmd/connect"
+	"github.com/daemon369/go-socks5/common"
 )
 
 var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
@@ -82,7 +68,7 @@ func (server *Server) Serve() {
 			continue
 		}
 
-		session := &session{server, serial, conn, nil}
+		session := &session{server: server, serial: serial, clientConn: conn, logger: logger}
 
 		go handleConnection(session)
 
@@ -113,6 +99,7 @@ type session struct {
 	serial     int
 	clientConn net.Conn
 	targetConn net.Conn
+	logger     *log.Logger
 }
 
 func handleConnection(session *session) {
@@ -179,7 +166,7 @@ func handle(session *session) (err error) {
 
 		logger.Printf("%d: protocol verison: %v, methods number: %v", serial, buf[0], buf[1])
 
-		if ProtocolVersion != buf[0] {
+		if common.ProtocolVersion != buf[0] {
 			err = errors.New(string(serial) + ": unsupported protocol version")
 			logger.Printf(err.Error())
 			break
@@ -212,13 +199,13 @@ func handle(session *session) (err error) {
 			break
 		}
 
-		conn.Write([]byte{ProtocolVersion, byte(a.Method())})
+		conn.Write([]byte{common.ProtocolVersion, byte(a.Method())})
 
 		break
 	}
 
 	if err != nil {
-		conn.Write([]byte{ProtocolVersion, auth.NO_ACCEPTABLE})
+		conn.Write([]byte{common.ProtocolVersion, auth.NO_ACCEPTABLE})
 		return err
 	}
 
@@ -249,19 +236,19 @@ func handle(session *session) (err error) {
 	+----+-----+-------+------+----------+----------+
 	*/
 
-	var rspCode byte = Success
+	var rspCode byte = common.Success
 
 	for {
 		// read 4 byte to get the address type, and determine length of the address to read next
 		if _, err = io.ReadFull(conn, buf[:4]); err != nil {
-			rspCode = ServerError
+			rspCode = common.ServerError
 			logger.Printf("%d: read cmd & address type failed: %v", serial, err)
 			break
 		}
 
 		// verify socks protocol version
-		if ProtocolVersion != buf[0] {
-			rspCode = ServerError
+		if common.ProtocolVersion != buf[0] {
+			rspCode = common.ServerError
 			err = errors.New(string(serial) + ": unsupported protocol version: " + string(buf[0]))
 			logger.Printf(err.Error())
 			break
@@ -271,7 +258,7 @@ func handle(session *session) (err error) {
 		command := buf[1]
 
 		if !cmd.VerifyCmd(command) {
-			rspCode = CommandUnsupported
+			rspCode = common.CommandUnsupported
 			err = errors.New(string(serial) + ": unsupported cmd: " + string(command))
 			logger.Println(err)
 			break
@@ -283,7 +270,7 @@ func handle(session *session) (err error) {
 			err = errors.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
 			logger.Println(err)
 			if session.server.strictMode {
-				rspCode = ServerError
+				rspCode = common.ServerError
 				break
 			}
 		}
@@ -308,7 +295,7 @@ func handle(session *session) (err error) {
 		}
 
 		if !address.Support(addressType) {
-			rspCode = AddressTypeUnsupported
+			rspCode = common.AddressTypeUnsupported
 			if err == nil {
 				err = errors.New(string(serial) + ": unsupported address type: " + string(addressType))
 			}
@@ -320,7 +307,7 @@ func handle(session *session) (err error) {
 		host := ""
 
 		if _, err = io.ReadFull(conn, hostSlice); err != nil {
-			rspCode = ServerError
+			rspCode = common.ServerError
 			logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
 			break
 		}
@@ -333,7 +320,7 @@ func handle(session *session) (err error) {
 		}
 
 		if _, err = io.ReadFull(conn, buf[:2]); err != nil {
-			rspCode = ServerError
+			rspCode = common.ServerError
 			logger.Printf("%d: read port error: %v", serial, err)
 			break
 		}
@@ -349,32 +336,15 @@ func handle(session *session) (err error) {
 		// TODO only support connect for now
 		switch command {
 		case cmd.CONNECT:
-			session.targetConn, err = net.Dial("tcp", addr)
-
+			rspCode, err = connect.Connect(session.clientConn, session.targetConn, session.logger, serial, addr)
 			if err != nil {
-				rspCode = NetworkUnreachable
 				break
 			}
-
-			if _, err = conn.Write(append([]byte{ProtocolVersion, 0, 0}, address.FromAddr(session.targetConn.LocalAddr())...)); err != nil {
-				rspCode = ServerError
-				break
-			}
-
-			ch := make(chan int, 2)
-
-			go transport(session, conn, session.targetConn, ch)
-			go transport(session, session.targetConn, conn, ch)
-
-			<-ch
-			<-ch
-
-			logger.Println(serial, ": finish transmission")
 
 			return nil
 
 		default:
-			rspCode = ServerError
+			rspCode = common.ServerError
 			err = errors.New(string(serial) + ": unsupported command: " + string(command))
 			logger.Printf(err.Error())
 			break
@@ -384,21 +354,9 @@ func handle(session *session) (err error) {
 	}
 
 	if err != nil {
-		conn.Write([]byte{ProtocolVersion, rspCode, 0, 1, 0, 0, 0, 0, 0, 0})
+		conn.Write([]byte{common.ProtocolVersion, rspCode, 0, 1, 0, 0, 0, 0, 0, 0})
 		return err
 	}
 
 	return nil
-}
-
-func transport(session *session, src, dst net.Conn, ch chan int) {
-	n, err := io.Copy(src, dst)
-
-	if err != nil {
-		logger.Println(err)
-	}
-
-	logger.Println(session.serial, ": transported: ", n)
-
-	ch <- 1
 }
