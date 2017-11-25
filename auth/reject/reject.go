@@ -23,5 +23,5 @@ func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
 }
 
 func New() *Reject {
-	return &Reject{*auth.New(auth.NO_ACCEPTABLE)}
+	return &Reject{*auth.New(auth.NoAcceptable)}
 }

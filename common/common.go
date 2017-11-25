@@ -1,6 +1,5 @@
 package common
 
-
 const (
 	ProtocolVersion = 0x05
 )
@@ -16,4 +15,3 @@ const (
 	CommandUnsupported     = 0x07
 	AddressTypeUnsupported = 0x08
 )
-

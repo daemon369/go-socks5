@@ -14,48 +14,53 @@ const (
 	IPv6    = 0x04
 )
 
+type Address struct {
+	Type int
+	Host string
+	Ip   net.IP
+}
+
 func Support(addressType byte) bool {
 	return IPv4 == addressType || FQDN == addressType || IPv6 == addressType
 }
 
-func ParseAddress(addr string) (addrType int, host string, ip net.IP, err error) {
-	addrType = Unknown
+func ParseAddress(addr string) (address *Address, err error) {
+	address = &Address{Type: Unknown}
 
-	if ip = net.ParseIP(addr); ip != nil {
-		if ip4 := ip.To4(); ip4 != nil {
-			addrType = IPv4
-			ip = ip4
+	if address.Ip = net.ParseIP(addr); address.Ip != nil {
+		if ip4 := address.Ip.To4(); ip4 != nil {
+			address.Type = IPv4
+			address.Ip = ip4
 		} else {
-			addrType = IPv6
+			address.Type = IPv6
 		}
 
 	} else {
-		host = addr
+		address.Host = addr
 
-		if len(host) <= 0 || len(host) > 255 {
-			return Unknown, host, nil, errors.New("host name length illegal")
+		if len(address.Host) <= 0 || len(address.Host) > 255 {
+			return address, errors.New("host name length illegal")
 		}
 
-		addrType = FQDN
+		address.Type = FQDN
 	}
 
-	return addrType, host, ip, err
+	return address, err
 }
 
 func FromAddr(addr net.Addr) (data []byte) {
 
-	var addrType = Unknown
-	var host = "0.0.0.0"
 	var ip = net.IP{}
 	var port = 0
 	var err error
+	var address = &Address{Type: Unknown, Host: "0.0.0.0", Ip: net.IP{}}
 
 	if addr != nil {
 		var portStr = "0"
-		host, portStr, err = net.SplitHostPort(addr.String())
+		address.Host, portStr, err = net.SplitHostPort(addr.String())
 
 		if err == nil {
-			addrType, host, ip, err = ParseAddress(host)
+			address, err = ParseAddress(address.Host)
 
 			if port, err = strconv.Atoi(portStr); err != nil {
 				fmt.Printf("parse local address port failed: %v", err)
@@ -63,15 +68,15 @@ func FromAddr(addr net.Addr) (data []byte) {
 		}
 	}
 
-	switch addrType {
+	switch address.Type {
 	case IPv4:
 		data = append(data, IPv4)
 		data = append(data, ip...)
 
 	case FQDN:
 		data = append(data, FQDN)
-		data = append(data, uint8(len(host)))
-		data = append(data, host...)
+		data = append(data, uint8(len(address.Host)))
+		data = append(data, address.Host...)
 
 	case IPv6:
 		data = append(data, IPv6)

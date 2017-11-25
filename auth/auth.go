@@ -15,14 +15,14 @@ import (
 	X'FF' NO ACCEPTABLE METHODS
  */
 const (
-	NO_AUTH           = 0x00
-	GSSAPI            = 0x01
-	USERNAME_PASSWORD = 0x02
-	IANA_MIN          = 0x03
-	IANA_MAX          = 0x7F
-	PRIVATE_MIN       = 0x80
-	PRIVATE_MAX       = 0xFE
-	NO_ACCEPTABLE     = 0xFF
+	NoAuth           = 0x00
+	GSSAPI           = 0x01
+	UsernamePassword = 0x02
+	IANAMin          = 0x03
+	IANAMax          = 0x7F
+	PrivateMin       = 0x80
+	PrivateMax       = 0xFE
+	NoAcceptable     = 0xFF
 )
 
 // provide user auth

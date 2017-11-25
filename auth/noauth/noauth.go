@@ -22,5 +22,5 @@ func (a *NoAuth) Authenticate(conn net.Conn, serial int) (err error) {
 }
 
 func New() *NoAuth {
-	return &NoAuth{*auth.New(auth.NO_AUTH)}
+	return &NoAuth{*auth.New(auth.NoAuth)}
 }

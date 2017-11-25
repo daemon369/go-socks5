@@ -193,7 +193,7 @@ func handle(session *session) (err error) {
 			break
 		}
 
-		if auth.NO_ACCEPTABLE == a.Method() {
+		if auth.NoAcceptable == a.Method() {
 			err = errors.New(string(serial) + ": choose reject authenticator")
 			logger.Printf(err.Error())
 			break
@@ -205,7 +205,7 @@ func handle(session *session) (err error) {
 	}
 
 	if err != nil {
-		conn.Write([]byte{common.ProtocolVersion, auth.NO_ACCEPTABLE})
+		conn.Write([]byte{common.ProtocolVersion, auth.NoAcceptable})
 		return err
 	}
 
