@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	auth.Register(New())
+	//auth.Register(New())
 }
 
 type NoAuth struct {

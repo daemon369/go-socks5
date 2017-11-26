@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"net"
 )
 
@@ -49,14 +48,14 @@ func (a *Authentication) Method() (methodId int) {
 
 var registerMap = make(map[int]Authenticator)
 
-func Register(auth Authenticator) {
+func Register(auth Authenticator) (err error) {
 	method := auth.Method()
 
 	if _, ok := registerMap[method]; ok {
-		fmt.Printf("Authenticator for method[%d] has already been registered", method)
-		return
+		return errors.New("Authenticator for method[" + string(method) + "] has already been registered")
 	}
 	registerMap[method] = auth
+	return nil
 }
 
 func Get(methodId int) (auth Authenticator, err error) {

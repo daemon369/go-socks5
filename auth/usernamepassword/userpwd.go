@@ -1,4 +1,4 @@
-package userpwd
+package usernamepassword
 
 import (
 	"net"
@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	auth.Register(New())
+	//auth.Register(New())
 }
 
 type Handler interface {
