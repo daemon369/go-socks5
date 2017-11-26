@@ -5,10 +5,6 @@ import (
 	"github.com/daemon369/go-socks5/auth"
 )
 
-func init() {
-	//auth.Register(New())
-}
-
 type NoAuth struct {
 	a auth.Authentication
 }
