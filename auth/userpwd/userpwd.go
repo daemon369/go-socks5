@@ -1,4 +1,4 @@
-package usernamepassword
+package userpwd
 
 import (
 	"errors"

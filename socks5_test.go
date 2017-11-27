@@ -6,7 +6,7 @@ import (
 	"testing"
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/auth/noauth"
-	"github.com/daemon369/go-socks5/auth/usernamepassword"
+	"github.com/daemon369/go-socks5/auth/userpwd"
 )
 
 func Test_Serve(t *testing.T) {
@@ -15,15 +15,15 @@ func Test_Serve(t *testing.T) {
 	ret := true
 	// register
 	ret = auth.Register(noauth.New()) == nil
-	userNamePassword := usernamepassword.New()
-	userNamePassword.SetHandlerFunc(func(username, password string) bool {
+	u := userpwd.New()
+	u.SetHandlerFunc(func(username, password string) bool {
 		if strings.Compare("daemon", username) == 0 && strings.Compare("123456", password) == 0 {
 			return true
 		} else {
 			return false
 		}
 	})
-	ret = ret && auth.Register(userNamePassword) == nil
+	ret = ret && auth.Register(u) == nil
 
 	fmt.Println(server)
 	t.Log("server started success")
