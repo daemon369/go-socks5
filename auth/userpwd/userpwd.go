@@ -73,12 +73,13 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 			password = string(buf[:])
 		}
 
-		if u.handler == nil {
-			err = errors.New("handler can not be nil")
-			break
+		handler := u.handler
+
+		if handler == nil {
+			handler = defaultHandler
 		}
 
-		if !u.handler.handle(username, password) {
+		if !handler.handle(username, password) {
 			err = errors.New("username/password not accepted")
 			break
 		}
@@ -96,7 +97,7 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 }
 
 func New() *UsernamePassword {
-	return &UsernamePassword{a: *auth.New(auth.UsernamePassword), handler: defaultHandler}
+	return &UsernamePassword{a: *auth.New(auth.UsernamePassword)}
 }
 
 func (u *UsernamePassword) SetHandler(handler Handler) {

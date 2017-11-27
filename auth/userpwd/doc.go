@@ -1,6 +1,9 @@
 /*
 username/password authenticator
 
+NOTICE that server should set their own handlers to provide custom
+user verification (default handler accept all username/password)
+
 Usage:
 	import (
 		"strings"
