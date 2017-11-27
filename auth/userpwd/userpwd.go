@@ -24,16 +24,16 @@ func (f HandlerFunc) handle(username, password string) bool {
 // default handler accept all username/password
 var defaultHandler = HandlerFunc(func(username, password string) bool { return true })
 
-type UserNamePassword struct {
+type UsernamePassword struct {
 	a       auth.Authentication
 	handler Handler
 }
 
-func (u *UserNamePassword) Method() (methodId int) {
+func (u *UsernamePassword) Method() (methodId int) {
 	return u.a.Method()
 }
 
-func (u *UserNamePassword) Authenticate(conn net.Conn, serial int) (err error) {
+func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 
 	for {
 		buf := make([]byte, 2)
@@ -47,7 +47,7 @@ func (u *UserNamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		var userName = ""
+		var username = ""
 		var password = ""
 
 		if buf[1] > 0 {
@@ -56,7 +56,7 @@ func (u *UserNamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 				break
 			}
 
-			userName = string(buf[:])
+			username = string(buf[:])
 		}
 
 		buf = make([]byte, 1)
@@ -78,7 +78,7 @@ func (u *UserNamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		if !u.handler.handle(userName, password) {
+		if !u.handler.handle(username, password) {
 			err = errors.New("username/password not accepted")
 			break
 		}
@@ -95,14 +95,14 @@ func (u *UserNamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 	return err
 }
 
-func New() *UserNamePassword {
-	return &UserNamePassword{a: *auth.New(auth.UsernamePassword), handler: defaultHandler}
+func New() *UsernamePassword {
+	return &UsernamePassword{a: *auth.New(auth.UsernamePassword), handler: defaultHandler}
 }
 
-func (u *UserNamePassword) SetHandler(handler Handler) {
+func (u *UsernamePassword) SetHandler(handler Handler) {
 	u.handler = handler
 }
 
-func (u *UserNamePassword) SetHandlerFunc(f func(username, password string) bool) {
+func (u *UsernamePassword) SetHandlerFunc(f func(username, password string) bool) {
 	u.handler = HandlerFunc(f)
 }
