@@ -7,7 +7,7 @@ import (
 )
 
 func Test_reject(t *testing.T) {
-	a := Reject{*auth.New(0)}
+	a := reject{*auth.New(0)}
 	fmt.Println(a.Method())
 }
 

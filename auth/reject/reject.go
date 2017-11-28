@@ -10,18 +10,18 @@ func init() {
 	auth.Register(New())
 }
 
-type Reject struct {
+type reject struct {
 	a auth.Authentication
 }
 
-func (r *Reject) Method() (methodId int) {
+func (r *reject) Method() (methodId int) {
 	return r.a.Method()
 }
 
-func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
+func (r *reject) Authenticate(conn net.Conn, serial int) (err error) {
 	return errors.New("authenticate rejected for method[0xFF]")
 }
 
-func New() *Reject {
-	return &Reject{*auth.New(auth.NoAcceptable)}
+func New() *reject {
+	return &reject{*auth.New(auth.NoAcceptable)}
 }

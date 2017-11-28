@@ -33,6 +33,24 @@ func (u *UsernamePassword) Method() (methodId int) {
 	return u.a.Method()
 }
 
+/*
+1. client send a username/password request
+
+	+----+------+----------+------+----------+
+	|VER | ULEN |  UNAME   | PLEN |  PASSWD  |
+	+----+------+----------+------+----------+
+	| 1  |  1   | 1 to 255 |  1   | 1 to 255 |
+	+----+------+----------+------+----------+
+
+2. server verifies request and send response with version & status,
+   0x00 indicates success and other values indicate failure
+
+	+----+--------+
+	|VER | STATUS |
+	+----+--------+
+	|  1 |   1    |
+	+----+--------+
+*/
 func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 
 	for {
@@ -84,7 +102,7 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 			break
 		}
 
-		conn.Write([]byte{VERSION, 0x00})
+		conn.Write([]byte{VERSION, 0x00}) // should we care the result?
 
 		return nil
 	}
