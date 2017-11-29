@@ -1,20 +1,19 @@
-package socks5
+package main
 
 import (
 	"fmt"
 	"strings"
-	"testing"
+	"github.com/daemon369/go-socks5"
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/auth/noauth"
 	"github.com/daemon369/go-socks5/auth/userpwd"
 )
 
-func Test_Serve(t *testing.T) {
-	server := New(":1080")
+func main() {
+	server := socks5.New(":1080")
+	fmt.Println("server started success: ", server)
 
-	ret := true
-	// register
-	ret = auth.Register(noauth.New()) == nil
+	auth.Register(noauth.New())
 	u := userpwd.New()
 	u.SetHandlerFunc(func(username, password string) bool {
 		if strings.Compare("daemon", username) == 0 && strings.Compare("123456", password) == 0 {
@@ -23,15 +22,8 @@ func Test_Serve(t *testing.T) {
 			return false
 		}
 	})
-	ret = ret && auth.Register(u) == nil
+	auth.Register(u)
 
 	fmt.Println(server)
-	t.Log("server started success")
 	server.Serve()
-
-	if ret {
-		t.Log("success")
-	} else {
-		t.Error("failed")
-	}
 }

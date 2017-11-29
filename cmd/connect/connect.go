@@ -16,6 +16,8 @@ func Connect(clientConn, targetConn net.Conn, logger *log.Logger, serial int, ad
 		return rspCode, err
 	}
 
+	defer targetConn.Close()
+
 	if _, err = clientConn.Write(append([]byte{common.ProtocolVersion, 0, 0}, address.FromAddr(targetConn.LocalAddr())...)); err != nil {
 		rspCode = common.ServerError
 		return rspCode, err

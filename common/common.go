@@ -1,5 +1,9 @@
 package common
 
+import (
+	"errors"
+)
+
 const (
 	ProtocolVersion = 0x05
 )
@@ -15,3 +19,11 @@ const (
 	CommandUnsupported     = 0x07
 	AddressTypeUnsupported = 0x08
 )
+
+func CheckProtocolVersion(ver byte) (err error) {
+	if ProtocolVersion != ver {
+		return errors.New("protocol version unsupported")
+	}
+
+	return nil
+}
