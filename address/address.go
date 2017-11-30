@@ -18,6 +18,7 @@ type Address struct {
 	Type int
 	Host string
 	Ip   net.IP
+	Port int
 }
 
 func Support(addressType byte) bool {
@@ -50,8 +51,6 @@ func ParseAddress(addr string) (address *Address, err error) {
 
 func FromAddr(addr net.Addr) (data []byte) {
 
-	var ip = net.IP{}
-	var port = 0
 	var err error
 	var address = &Address{Type: Unknown, Host: "0.0.0.0", Ip: net.IP{}}
 
@@ -62,7 +61,7 @@ func FromAddr(addr net.Addr) (data []byte) {
 		if err == nil {
 			address, err = ParseAddress(address.Host)
 
-			if port, err = strconv.Atoi(portStr); err != nil {
+			if address.Port, err = strconv.Atoi(portStr); err != nil {
 				fmt.Printf("parse local address port failed: %v", err)
 			}
 		}
@@ -71,7 +70,7 @@ func FromAddr(addr net.Addr) (data []byte) {
 	switch address.Type {
 	case IPv4:
 		data = append(data, IPv4)
-		data = append(data, ip...)
+		data = append(data, address.Ip...)
 
 	case FQDN:
 		data = append(data, FQDN)
@@ -80,14 +79,14 @@ func FromAddr(addr net.Addr) (data []byte) {
 
 	case IPv6:
 		data = append(data, IPv6)
-		data = append(data, ip...)
+		data = append(data, address.Ip...)
 
 	default:
 		data = append(data, IPv4)
 		data = append(data, net.IPv4zero...)
 	}
 
-	data = append(data, byte(port>>8), byte(port))
+	data = append(data, byte(address.Port>>8), byte(address.Port))
 
 	return data
 }
