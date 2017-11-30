@@ -18,13 +18,7 @@ type Client struct {
 	Authenticator auth.Authenticator
 }
 
-type Target struct {
-	AddressType int
-	Host        string
-	Ip          net.IP
-}
-
-func (c *Client) Connect(addr net.Addr, target Target) (err error) {
+func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (err error) {
 
 	var remote net.Conn
 
@@ -62,7 +56,7 @@ func (c *Client) Connect(addr net.Addr, target Target) (err error) {
 	}
 
 	buf = []byte{common.ProtocolVersion, cmd.CONNECT, 0x00}
-	buf = append(buf, address.FromAddr(addr)...) //TODO
+	buf = append(buf, address.FromAddress(targetAddr)...)
 
 	if _, err = remote.Write(buf); err != nil {
 		return err

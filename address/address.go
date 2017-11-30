@@ -67,6 +67,11 @@ func FromAddr(addr net.Addr) (data []byte) {
 		}
 	}
 
+	return FromAddress(address)
+}
+
+func FromAddress(address *Address) (data []byte) {
+
 	switch address.Type {
 	case IPv4:
 		data = append(data, IPv4)
