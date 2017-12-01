@@ -19,19 +19,6 @@ type Authenticator interface {
 	Authenticate(conn net.Conn, serial int) (err error)
 }
 
-type Authentication struct {
-	method int
-}
-
-func New(methodId int) *Authentication {
-	return &Authentication{methodId}
-}
-
-func (a *Authentication) Method() (methodId int) {
-	methodId = a.method
-	return
-}
-
 var registerMap = make(map[int]Authenticator)
 
 func Register(auth Authenticator) (err error) {
