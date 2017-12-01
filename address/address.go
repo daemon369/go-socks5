@@ -3,6 +3,7 @@ package address
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 )
@@ -94,4 +95,69 @@ func FromAddress(address *Address) (data []byte) {
 	data = append(data, byte(address.Port>>8), byte(address.Port))
 
 	return data
+}
+
+/*
+read address type, address and port from net.Conn
+
+	+------+----------+----------+
+	| ATYP |   ADDR   |   PORT   |
+	+------+----------+----------+
+	|  1   | Variable |    2     |
+	+------+----------+----------+
+ */
+func ReadAddress(conn net.Conn) (address *Address, err error) {
+	buf := make([]byte, 1)
+
+	if _, err = io.ReadFull(conn, buf); err != nil {
+		return nil, err
+	}
+
+	addrType := buf[0]
+	address = &Address{}
+
+	if !Support(addrType) {
+		return nil, errors.New("unsupported address type: " + string(addrType))
+	}
+
+	var addrLen byte = 0
+
+	switch addrType {
+	case IPv4:
+		address.Type = IPv4
+		addrLen = net.IPv4len
+	case IPv6:
+		address.Type = IPv6
+		addrLen = net.IPv6len
+	case FQDN:
+		address.Type = FQDN
+		if _, err = io.ReadFull(conn, buf); err != nil {
+			return nil, err
+		}
+		addrLen = buf[0]
+		if buf[0] == 0 {
+			return nil, errors.New("host length can't be 0")
+		}
+	}
+
+	buf = make([]byte, addrLen)
+
+	if _, err = io.ReadFull(conn, buf); err != nil {
+		return nil, err
+	}
+
+	switch addrType {
+	case IPv4, IPv6:
+		address.Host = net.IP(buf).String()
+	case FQDN:
+		address.Host = string(buf)
+	}
+
+	if _, err = io.ReadFull(conn, buf[:2]); err != nil {
+		return nil, err
+	}
+
+	address.Port = int(uint16(buf[0])<<8 | uint16(buf[1]))
+
+	return address, nil
 }
