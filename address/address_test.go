@@ -22,23 +22,23 @@ func Test_parse(t *testing.T) {
 	addrList = append(addrList, testCase{"localhost", true})
 
 	for _, v := range addrList {
-		addrType, host, ip, err := ParseAddress(v.host)
+		addr, err := ParseAddress(v.host)
 
-		fmt.Println(addrType, host, ip, err)
+		fmt.Println(addr, err)
 
 		var ret = false
 
 		if err == nil {
-			switch addrType {
+			switch addr.Type {
 			case IPv4:
-				ip4 := ip.To4()
+				ip4 := addr.Ip.To4()
 				ret = ip4 != nil && len(ip4) == net.IPv4len
 
 			case FQDN:
-				ret = len(host) > 0 && len(host) < 256
+				ret = len(addr.Host) > 0 && len(addr.Host) < 256
 
 			case IPv6:
-				ip6 := ip.To16()
+				ip6 := addr.Ip.To16()
 				ret = ip6 != nil && len(ip6) == net.IPv6len
 
 			default:
