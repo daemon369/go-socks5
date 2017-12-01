@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"github.com/daemon369/go-socks5/address"
 	"github.com/daemon369/go-socks5/auth"
-	_ "github.com/daemon369/go-socks5/auth/noauth"
-	_ "github.com/daemon369/go-socks5/auth/reject"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/cmd/connect"
 	"github.com/daemon369/go-socks5/common"
@@ -193,7 +191,7 @@ func handle(session *session) (err error) {
 			break
 		}
 
-		if auth.NoAcceptable == a.Method() {
+		if common.NoAcceptable == a.Method() {
 			err = errors.New(string(serial) + ": choose reject authenticator")
 			logger.Printf(err.Error())
 			break
@@ -205,7 +203,7 @@ func handle(session *session) (err error) {
 	}
 
 	if err != nil {
-		conn.Write([]byte{common.ProtocolVersion, auth.NoAcceptable})
+		conn.Write([]byte{common.ProtocolVersion, common.NoAcceptable})
 		return err
 	}
 

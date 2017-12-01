@@ -2,15 +2,14 @@ package noauth
 
 import (
 	"net"
-	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/common"
 )
 
 type NoAuth struct {
-	a auth.Authentication
 }
 
 func (a *NoAuth) Method() (methodId int) {
-	return a.a.Method()
+	return common.NoAuth
 }
 
 func (a *NoAuth) Authenticate(conn net.Conn, serial int) (err error) {
@@ -18,5 +17,5 @@ func (a *NoAuth) Authenticate(conn net.Conn, serial int) (err error) {
 }
 
 func New() *NoAuth {
-	return &NoAuth{*auth.New(auth.NoAuth)}
+	return &NoAuth{}
 }

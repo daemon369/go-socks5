@@ -1,16 +1,14 @@
 package socks5
 
 import (
-	"net"
+	"errors"
 	"fmt"
 	"io"
-	_ "github.com/daemon369/go-socks5/address"
-	_ "errors"
-	"github.com/daemon369/go-socks5/common"
-	"github.com/daemon369/go-socks5/auth"
-	"errors"
-	"github.com/daemon369/go-socks5/cmd"
+	"net"
 	"github.com/daemon369/go-socks5/address"
+	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/cmd"
+	"github.com/daemon369/go-socks5/common"
 )
 
 type Client struct {
@@ -31,7 +29,7 @@ func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (err error)
 
 	defer remote.Close()
 
-	if _, err = remote.Write([]byte{common.ProtocolVersion, 1, auth.NoAuth}); err != nil {
+	if _, err = remote.Write([]byte{common.ProtocolVersion, 1, common.NoAuth}); err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -51,7 +49,7 @@ func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (err error)
 		return errors.New("authenticator method unsupported")
 	}
 
-	if auth.NoAcceptable == buf[1] {
+	if common.NoAcceptable == buf[1] {
 		return errors.New("no acceptable method for server")
 	}
 
@@ -62,7 +60,7 @@ func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (err error)
 		return err
 	}
 
-	buf = make([]byte, 4)
+	buf = make([]byte, 3)
 
 	if _, err = io.ReadFull(remote, buf); err != nil {
 		return
@@ -76,8 +74,10 @@ func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (err error)
 		return errors.New("error happened[" + string(buf[1]) + "]")
 	}
 
-	//address.ParseAddress()
-	// TODO
+	// ignore address read from server
+	if _, err = address.ReadAddress(remote); err != nil {
+		return err
+	}
 
 	//buf = make([]byte, 0, 6+len(baidu))
 	//buf = append(buf, common.ProtocolVersion, 1, 0)

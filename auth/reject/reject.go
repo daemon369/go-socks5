@@ -3,25 +3,20 @@ package reject
 import (
 	"errors"
 	"net"
-	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/common"
 )
 
-func init() {
-	auth.Register(New())
+type Reject struct {
 }
 
-type reject struct {
-	a auth.Authentication
+func (r *Reject) Method() (methodId int) {
+	return common.NoAcceptable
 }
 
-func (r *reject) Method() (methodId int) {
-	return r.a.Method()
-}
-
-func (r *reject) Authenticate(conn net.Conn, serial int) (err error) {
+func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
 	return errors.New("authenticate rejected for method[0xFF]")
 }
 
-func New() *reject {
-	return &reject{*auth.New(auth.NoAcceptable)}
+func New() *Reject {
+	return &Reject{}
 }

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 	"net"
-	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/common"
 )
 
 const (
@@ -25,12 +25,11 @@ func (f HandlerFunc) handle(username, password string) bool {
 var defaultHandler = HandlerFunc(func(username, password string) bool { return true })
 
 type UsernamePassword struct {
-	a       auth.Authentication
 	handler Handler
 }
 
 func (u *UsernamePassword) Method() (methodId int) {
-	return u.a.Method()
+	return common.UsernamePassword
 }
 
 /*
@@ -115,7 +114,7 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 }
 
 func New() *UsernamePassword {
-	return &UsernamePassword{a: *auth.New(auth.UsernamePassword)}
+	return &UsernamePassword{}
 }
 
 func (u *UsernamePassword) SetHandler(handler Handler) {
