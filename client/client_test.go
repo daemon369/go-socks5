@@ -19,7 +19,7 @@ func Test_client(t *testing.T) {
 
 	defer conn.Close()
 
-	get := "GET / HTTP/1.1\n\n"
+	get := "GET / HTTP/1.1\nHost: www.baidu.com\n\n"
 
 	if _, err = conn.Write([]byte(get)); err != nil {
 		t.Error(err)
@@ -36,18 +36,24 @@ func Test_client(t *testing.T) {
 
 	buf := make([]byte, 4096)
 
-	n, err := conn.Read(buf)
+	for {
+		n, err := conn.Read(buf)
 
-	if err != nil {
-		t.Error(err)
-		return
-	}
+		if err != nil {
+			t.Error(err)
+			return
+		}
 
-	_, err = file.Write(buf[0:n])
+		if n <= 0 {
+			break
+		}
 
-	if err != nil {
-		t.Error(err)
-		return
+		_, err = file.Write(buf[0:n])
+
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	}
 
 	t.Log("success")
