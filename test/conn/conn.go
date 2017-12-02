@@ -50,3 +50,7 @@ func (c *TestConn) Close() error {
 	}
 	return nil
 }
+
+func (c *TestConn) Reverse() (cc *TestConn) {
+	return &TestConn{readBuf: c.writeBuf, writeBuf: c.readBuf}
+}
