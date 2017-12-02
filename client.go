@@ -17,7 +17,7 @@ type Client struct {
 	conn          net.Conn
 }
 
-func (c *Client) Connect(addr net.Addr, targetAddr *address.Address) (conn net.Conn, err error) {
+func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error) {
 
 	var remote net.Conn
 
