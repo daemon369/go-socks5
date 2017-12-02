@@ -14,7 +14,7 @@ func (r *Reject) Method() (methodId int) {
 }
 
 func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
-	return errors.New("authenticate rejected for method[0xFF]")
+	return errors.New("no available method")
 }
 
 func New() *Reject {
