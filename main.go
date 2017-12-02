@@ -11,7 +11,6 @@ import (
 
 func main() {
 	srv := server.New(":1080")
-	fmt.Println("server started success: ", srv)
 
 	auth.Register(noauth.New())
 	u := userpwd.New()
