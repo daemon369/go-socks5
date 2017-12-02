@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"strings"
-	"github.com/daemon369/go-socks5"
-	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/auth/noauth"
 	"github.com/daemon369/go-socks5/auth/userpwd"
+	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/server"
 )
 
 func main() {
-	server := socks5.New(":1080")
-	fmt.Println("server started success: ", server)
+	srv := server.New(":1080")
+	fmt.Println("server started success: ", srv)
 
 	auth.Register(noauth.New())
 	u := userpwd.New()
@@ -24,6 +24,6 @@ func main() {
 	})
 	auth.Register(u)
 
-	fmt.Println(server)
-	server.Serve()
+	fmt.Println(srv)
+	srv.Serve()
 }
