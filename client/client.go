@@ -80,3 +80,28 @@ func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error)
 
 	return remote, nil
 }
+
+//func (c *Client) Http(targetUrl string) (content string, err error) {
+//	var u *url.URL
+//
+//	if u, err = url.Parse(targetUrl); err != nil {
+//		return
+//	}
+//
+//	addr := &address.Address{}
+//
+//	var conn net.Conn
+//
+//	if conn, err = c.Connect(addr); err != nil {
+//		return
+//	}
+//
+//	tr := &http.Transport{
+//		DialContext:(&net.Dialer{
+//
+//		})
+//	}
+//	httpClient := &http.Client{Transport: tr}
+//
+//	return "", nil
+//}

@@ -1,6 +1,9 @@
 package client
 
 import (
+	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"testing"
 	"github.com/daemon369/go-socks5/auth/noauth"
@@ -39,6 +42,10 @@ func Test_client(t *testing.T) {
 	for {
 		n, err := conn.Read(buf)
 
+		if err == io.EOF {
+			break
+		}
+
 		if err != nil {
 			t.Error(err)
 			return
@@ -57,4 +64,12 @@ func Test_client(t *testing.T) {
 	}
 
 	t.Log("success")
+}
+
+func TestClient_Http(t *testing.T) {
+	url, err := url.Parse("https://name:pwd@www.test.com:9999/test.html?t1=ll&t2=mm#fragment")
+
+	if err == nil {
+		fmt.Println(url)
+	}
 }
