@@ -8,6 +8,11 @@ import (
 	"github.com/daemon369/go-socks5/common"
 )
 
+const (
+	ClientToTarget = iota
+	TargetToClient
+)
+
 func Connect(clientConn, targetConn net.Conn, logger *log.Logger, serial int, addr string) (rspCode byte, err error) {
 	targetConn, err = net.Dial("tcp", addr)
 
@@ -23,12 +28,11 @@ func Connect(clientConn, targetConn net.Conn, logger *log.Logger, serial int, ad
 		return rspCode, err
 	}
 
-	ch := make(chan int, 2)
+	ch := make(chan int, 1)
 
-	go transport(logger, serial, clientConn, targetConn, ch)
-	go transport(logger, serial, targetConn, clientConn, ch)
+	go transport(logger, serial, clientConn, targetConn, ch, ClientToTarget)
+	go transport(logger, serial, targetConn, clientConn, ch, TargetToClient)
 
-	<-ch
 	<-ch
 
 	logger.Println(serial, ": finish transmission")
@@ -36,14 +40,14 @@ func Connect(clientConn, targetConn net.Conn, logger *log.Logger, serial int, ad
 	return common.Success, nil
 }
 
-func transport(logger *log.Logger, serial int, src, dst net.Conn, ch chan int) {
-	n, err := io.Copy(src, dst)
+func transport(logger *log.Logger, serial int, src, dst net.Conn, ch chan int, direction int) {
+	n, err := io.Copy(dst, src)
 
 	if err != nil {
 		logger.Println(err)
 	}
 
-	logger.Println(serial, ": transported: ", n)
+	logger.Println(serial, ":", direction, ":transported:", n)
 
-	ch <- 1
+	ch <- direction
 }
