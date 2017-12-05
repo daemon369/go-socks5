@@ -2,14 +2,17 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"io"
+	"log"
 	"net"
+	"os"
 	"github.com/daemon369/go-socks5/address"
 	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/common"
 )
+
+var logger = log.New(os.Stderr, "Client: ", log.LstdFlags)
 
 type Client struct {
 	ProxyAddr     string
@@ -24,19 +27,19 @@ func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error)
 	remote, err = net.Dial("tcp", c.ProxyAddr)
 
 	if err != nil {
-		fmt.Println(err)
+		logger.Println(err)
 		return
 	}
 
 	if _, err = remote.Write([]byte{common.ProtocolVersion, 1, common.NoAuth}); err != nil {
-		fmt.Println(err)
+		logger.Println(err)
 		return
 	}
 
 	buf := make([]byte, 2)
 
 	if _, err = io.ReadFull(remote, buf); err != nil {
-		fmt.Println(err)
+		logger.Println(err)
 		return
 	}
 
@@ -49,7 +52,7 @@ func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error)
 	}
 
 	if common.NoAcceptable == buf[1] {
-		return nil, errors.New("no acceptable method for server")
+		return nil, errors.New("no acceptable method")
 	}
 
 	buf = []byte{common.ProtocolVersion, cmd.CONNECT, 0x00}
@@ -99,7 +102,7 @@ func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error)
 //	tr := &http.Transport{
 //		DialContext:(&net.Dialer{
 //
-//		})
+//		}).DialContext
 //	}
 //	httpClient := &http.Client{Transport: tr}
 //

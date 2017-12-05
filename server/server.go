@@ -15,7 +15,7 @@ import (
 	"github.com/daemon369/go-socks5/common"
 )
 
-var logger = log.New(os.Stderr, "Socks5: ", log.LstdFlags)
+var logger = log.New(os.Stderr, "Server: ", log.LstdFlags)
 
 type Server struct {
 	// server listen address
