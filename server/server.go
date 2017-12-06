@@ -237,8 +237,7 @@ func handle(session *session) (err error) {
 	var rspCode byte = common.Success
 
 	for {
-		// read 4 byte to get the address type, and determine length of the address to read next
-		if _, err = io.ReadFull(conn, buf[:4]); err != nil {
+		if _, err = io.ReadFull(conn, buf[:3]); err != nil {
 			rspCode = common.ServerError
 			logger.Printf("%d: read cmd & address type failed: %v", serial, err)
 			break
@@ -273,68 +272,81 @@ func handle(session *session) (err error) {
 			}
 		}
 
-		var addressType = buf[3]
-		var addressLen byte = 0
-
-		switch addressType {
-		case address.IPv4:
-			addressLen = net.IPv4len
-
-		case address.FQDN:
-			if _, err = io.ReadFull(conn, buf[:1]); err != nil {
-				addressType = address.Unknown
-				logger.Printf("%d: read FQDN address length error: %v", serial, err)
-				break
-			}
-			addressLen = buf[0]
-
-		case address.IPv6:
-			addressLen = net.IPv6len
-		}
-
-		if !address.Support(addressType) {
-			rspCode = common.AddressTypeUnsupported
-			if err == nil {
-				err = errors.New(string(serial) + ": unsupported address type: " + string(addressType))
-			}
-			logger.Println(err.Error())
-			break
-		}
-
-		hostSlice := make([]byte, addressLen)
-		host := ""
-
-		if _, err = io.ReadFull(conn, hostSlice); err != nil {
+		var addr *address.Address
+		addr, err = address.ReadAddress(conn)
+		if err != nil {
 			rspCode = common.ServerError
-			logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
+			logger.Printf("%d: read address error: %v", serial, err)
 			break
 		}
 
-		switch addressType {
-		case address.IPv4, address.IPv6:
-			host = net.IP(hostSlice).String()
-		case address.FQDN:
-			host = string(hostSlice)
-		}
-
-		if _, err = io.ReadFull(conn, buf[:2]); err != nil {
+		if addr.Type == address.Unknown {
 			rspCode = common.ServerError
-			logger.Printf("%d: read port error: %v", serial, err)
+			err = errors.New(string(serial) + ": unsupported address type: " + string(addr.Type))
+			logger.Printf("%d: read address error: %v", serial, err)
 			break
 		}
 
-		port := uint16(buf[0])<<8 | uint16(buf[1])
+		//var addressType = buf[3]
+		//var addressLen byte = 0
+		//
+		//switch addressType {
+		//case address.IPv4:
+		//	addressLen = net.IPv4len
+		//
+		//case address.FQDN:
+		//	if _, err = io.ReadFull(conn, buf[:1]); err != nil {
+		//		addressType = address.Unknown
+		//		logger.Printf("%d: read FQDN address length error: %v", serial, err)
+		//		break
+		//	}
+		//	addressLen = buf[0]
+		//
+		//case address.IPv6:
+		//	addressLen = net.IPv6len
+		//}
+		//
+		//if !address.Support(addressType) {
+		//	rspCode = common.AddressTypeUnsupported
+		//	if err == nil {
+		//		err = errors.New(string(serial) + ": unsupported address type: " + string(addressType))
+		//	}
+		//	logger.Println(err.Error())
+		//	break
+		//}
+		//
+		//hostSlice := make([]byte, addressLen)
+		//host := ""
+		//
+		//if _, err = io.ReadFull(conn, hostSlice); err != nil {
+		//	rspCode = common.ServerError
+		//	logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
+		//	break
+		//}
+		//
+		//switch addressType {
+		//case address.IPv4, address.IPv6:
+		//	host = net.IP(hostSlice).String()
+		//case address.FQDN:
+		//	host = string(hostSlice)
+		//}
+		//
+		//if _, err = io.ReadFull(conn, buf[:2]); err != nil {
+		//	rspCode = common.ServerError
+		//	logger.Printf("%d: read port error: %v", serial, err)
+		//	break
+		//}
 
-		portStr := strconv.Itoa(int(port))
+		portStr := strconv.Itoa(int(addr.Port))
 
-		addr := net.JoinHostPort(host, portStr)
+		addrFull := net.JoinHostPort(addr.Host, portStr)
 
-		logger.Printf("%d: remote address: %v", serial, addr)
+		logger.Printf("%d: remote address: %v", serial, addrFull)
 
 		// TODO only support connect for now
 		switch command {
 		case cmd.CONNECT:
-			rspCode, err = connect.Connect(session.clientConn, session.targetConn, session.logger, serial, addr)
+			rspCode, err = connect.Connect(session.clientConn, session.targetConn, session.logger, serial, addrFull)
 			if err != nil {
 				break
 			}
