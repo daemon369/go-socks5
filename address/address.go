@@ -16,14 +16,10 @@ const (
 )
 
 type Address struct {
-	Type int
+	Type byte
 	Host string
 	Ip   net.IP
 	Port int
-}
-
-func Support(addressType byte) bool {
-	return IPv4 == addressType || FQDN == addressType || IPv6 == addressType
 }
 
 func ParseAddress(addr string) (address *Address, err error) {
@@ -68,10 +64,10 @@ func FromAddr(addr net.Addr) (data []byte) {
 		}
 	}
 
-	return FromAddress(address)
+	return address.ToBytes()
 }
 
-func FromAddress(address *Address) (data []byte) {
+func (address *Address) ToBytes() (data []byte) {
 
 	switch address.Type {
 	case IPv4:
@@ -116,10 +112,6 @@ func ReadAddress(conn net.Conn) (address *Address, err error) {
 	addrType := buf[0]
 	address = &Address{}
 
-	if !Support(addrType) {
-		return nil, errors.New("unsupported address type: " + string(addrType))
-	}
-
 	var addrLen byte = 0
 
 	switch addrType {
@@ -138,6 +130,9 @@ func ReadAddress(conn net.Conn) (address *Address, err error) {
 		if buf[0] == 0 {
 			return nil, errors.New("host length can't be 0")
 		}
+
+	default:
+		return nil, errors.New("unsupported address type: " + string(addrType))
 	}
 
 	buf = make([]byte, addrLen)

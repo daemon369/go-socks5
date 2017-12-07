@@ -56,7 +56,7 @@ func (c *Client) Connect(targetAddr *address.Address) (conn net.Conn, err error)
 	}
 
 	buf = []byte{common.ProtocolVersion, cmd.CONNECT, 0x00}
-	buf = append(buf, address.FromAddress(targetAddr)...)
+	buf = append(buf, targetAddr.ToBytes()...)
 
 	if _, err = remote.Write(buf); err != nil {
 		return
