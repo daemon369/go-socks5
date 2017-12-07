@@ -287,56 +287,6 @@ func handle(session *session) (err error) {
 			break
 		}
 
-		//var addressType = buf[3]
-		//var addressLen byte = 0
-		//
-		//switch addressType {
-		//case address.IPv4:
-		//	addressLen = net.IPv4len
-		//
-		//case address.FQDN:
-		//	if _, err = io.ReadFull(conn, buf[:1]); err != nil {
-		//		addressType = address.Unknown
-		//		logger.Printf("%d: read FQDN address length error: %v", serial, err)
-		//		break
-		//	}
-		//	addressLen = buf[0]
-		//
-		//case address.IPv6:
-		//	addressLen = net.IPv6len
-		//}
-		//
-		//if !address.Support(addressType) {
-		//	rspCode = common.AddressTypeUnsupported
-		//	if err == nil {
-		//		err = errors.New(string(serial) + ": unsupported address type: " + string(addressType))
-		//	}
-		//	logger.Println(err.Error())
-		//	break
-		//}
-		//
-		//hostSlice := make([]byte, addressLen)
-		//host := ""
-		//
-		//if _, err = io.ReadFull(conn, hostSlice); err != nil {
-		//	rspCode = common.ServerError
-		//	logger.Printf("%d: read address[%d] error: %v", serial, addressType, err)
-		//	break
-		//}
-		//
-		//switch addressType {
-		//case address.IPv4, address.IPv6:
-		//	host = net.IP(hostSlice).String()
-		//case address.FQDN:
-		//	host = string(hostSlice)
-		//}
-		//
-		//if _, err = io.ReadFull(conn, buf[:2]); err != nil {
-		//	rspCode = common.ServerError
-		//	logger.Printf("%d: read port error: %v", serial, err)
-		//	break
-		//}
-
 		portStr := strconv.Itoa(int(addr.Port))
 
 		addrFull := net.JoinHostPort(addr.Host, portStr)
