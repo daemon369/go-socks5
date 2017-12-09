@@ -9,27 +9,71 @@ import (
 
 const (
 	VERSION = 0x01
+	MaxLen  = 0xff
 )
 
-type Handler interface {
+type ClientProvider interface {
+	Provide() (username, password string, err error)
+}
+
+type ServerHandler interface {
 	handle(username, password string) bool
 }
 
-type HandlerFunc func(username, password string) bool
+type ServerHandlerFunc func(username, password string) bool
 
-func (f HandlerFunc) handle(username, password string) bool {
+func (f ServerHandlerFunc) handle(username, password string) bool {
 	return f.handle(username, password)
 }
 
-// default handler accept all username/password
-var defaultHandler = HandlerFunc(func(username, password string) bool { return true })
+// default server handler accept all username/password
+var defaultServerHandler = ServerHandlerFunc(func(username, password string) bool { return true })
 
 type UsernamePassword struct {
-	handler Handler
+	provider ClientProvider
+	handler  ServerHandler
 }
 
 func (u *UsernamePassword) Method() (methodId int) {
 	return common.UsernamePassword
+}
+
+func (u *UsernamePassword) Client(conn net.Conn) (err error) {
+	if u.provider == nil {
+		return errors.New("client provider can't be nil, use SetClientProvider to set it")
+	}
+
+	var usr, pwd string
+	usr, pwd, err = u.provider.Provide()
+
+	if err != nil {
+		return err
+	}
+
+	usrLen := len(usr)
+	pwdLen := len(pwd)
+
+	if usrLen > MaxLen {
+		return errors.New("length of username out of limit(" + string(MaxLen) + ")")
+	}
+
+	if pwdLen > MaxLen {
+		return errors.New("length of password out of limit(" + string(MaxLen) + ")")
+	}
+
+	buf := []byte{VERSION}
+
+	buf = append(buf, byte(usrLen))
+	buf = append(buf, usr...)
+
+	buf = append(buf, byte(pwdLen))
+	buf = append(buf, pwd...)
+
+	if _, err = conn.Write(buf); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 /*
@@ -50,7 +94,7 @@ func (u *UsernamePassword) Method() (methodId int) {
 	|  1 |   1    |
 	+----+--------+
 */
-func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
+func (u *UsernamePassword) Server(conn net.Conn, serial int) (err error) {
 
 	for {
 		buf := make([]byte, 2)
@@ -93,7 +137,7 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 		handler := u.handler
 
 		if handler == nil {
-			handler = defaultHandler
+			handler = defaultServerHandler
 		}
 
 		if !handler.handle(username, password) {
@@ -117,10 +161,14 @@ func New() *UsernamePassword {
 	return &UsernamePassword{}
 }
 
-func (u *UsernamePassword) SetHandler(handler Handler) {
+func (u *UsernamePassword) SetClientProvider(provider ClientProvider) {
+	u.provider = provider
+}
+
+func (u *UsernamePassword) SetServerHandler(handler ServerHandler) {
 	u.handler = handler
 }
 
-func (u *UsernamePassword) SetHandlerFunc(f func(username, password string) bool) {
-	u.handler = HandlerFunc(f)
+func (u *UsernamePassword) SetServerHandlerFunc(f func(username, password string) bool) {
+	u.handler = ServerHandlerFunc(f)
 }

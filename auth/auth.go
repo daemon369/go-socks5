@@ -15,8 +15,9 @@ type Authenticator interface {
 	// get method id
 	Method() (methodId int)
 
-	// authenticate user
-	Authenticate(conn net.Conn, serial int) (err error)
+	Client(conn net.Conn) (err error)
+
+	Server(conn net.Conn, serial int) (err error)
 }
 
 var registerMap = make(map[int]Authenticator)

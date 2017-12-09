@@ -16,7 +16,7 @@ func Test_Serve(t *testing.T) {
 	// register
 	ret = auth.Register(noauth.New()) == nil
 	u := userpwd.New()
-	u.SetHandlerFunc(func(username, password string) bool {
+	u.SetServerHandlerFunc(func(username, password string) bool {
 		if strings.Compare("daemon", username) == 0 && strings.Compare("123456", password) == 0 {
 			return true
 		} else {

@@ -210,7 +210,7 @@ func handle(session *session) (err error) {
 	/*
 	3. authenticate
 	*/
-	if a.Authenticate(conn, serial) != nil {
+	if a.Server(conn, serial) != nil {
 		err = errors.New(string(serial) + ": authenticate failed")
 		logger.Printf(err.Error())
 		return err
