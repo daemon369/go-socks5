@@ -13,10 +13,6 @@ func (r *Reject) Method() (methodId int) {
 	return common.NoAcceptable
 }
 
-func (r *Reject) Client(conn net.Conn) (err error) {
-	return nil
-}
-
 func (r *Reject) Server(conn net.Conn, serial int) (err error) {
 	return errors.New("no available method")
 }

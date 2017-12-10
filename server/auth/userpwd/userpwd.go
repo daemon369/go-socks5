@@ -9,12 +9,7 @@ import (
 
 const (
 	VERSION = 0x01
-	MaxLen  = 0xff
 )
-
-type ClientProvider interface {
-	Provide() (username, password string, err error)
-}
 
 type ServerHandler interface {
 	handle(username, password string) bool
@@ -30,50 +25,11 @@ func (f ServerHandlerFunc) handle(username, password string) bool {
 var defaultServerHandler = ServerHandlerFunc(func(username, password string) bool { return true })
 
 type UsernamePassword struct {
-	provider ClientProvider
-	handler  ServerHandler
+	handler ServerHandler
 }
 
 func (u *UsernamePassword) Method() (methodId int) {
 	return common.UsernamePassword
-}
-
-func (u *UsernamePassword) Client(conn net.Conn) (err error) {
-	if u.provider == nil {
-		return errors.New("client provider can't be nil, use SetClientProvider to set it")
-	}
-
-	var usr, pwd string
-	usr, pwd, err = u.provider.Provide()
-
-	if err != nil {
-		return err
-	}
-
-	usrLen := len(usr)
-	pwdLen := len(pwd)
-
-	if usrLen > MaxLen {
-		return errors.New("length of username out of limit(" + string(MaxLen) + ")")
-	}
-
-	if pwdLen > MaxLen {
-		return errors.New("length of password out of limit(" + string(MaxLen) + ")")
-	}
-
-	buf := []byte{VERSION}
-
-	buf = append(buf, byte(usrLen))
-	buf = append(buf, usr...)
-
-	buf = append(buf, byte(pwdLen))
-	buf = append(buf, pwd...)
-
-	if _, err = conn.Write(buf); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 /*
@@ -159,10 +115,6 @@ func (u *UsernamePassword) Server(conn net.Conn, serial int) (err error) {
 
 func New() *UsernamePassword {
 	return &UsernamePassword{}
-}
-
-func (u *UsernamePassword) SetClientProvider(provider ClientProvider) {
-	u.provider = provider
 }
 
 func (u *UsernamePassword) SetServerHandler(handler ServerHandler) {

@@ -15,8 +15,6 @@ type Authenticator interface {
 	// get method id
 	Method() (methodId int)
 
-	Client(conn net.Conn) (err error)
-
 	Server(conn net.Conn, serial int) (err error)
 }
 
