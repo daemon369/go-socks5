@@ -11,12 +11,12 @@ const (
 	MaxLen  = 0xff
 )
 
-type ClientProvider interface {
+type Provider interface {
 	Provide() (username, password string, err error)
 }
 
 type UsernamePassword struct {
-	provider ClientProvider
+	provider Provider
 }
 
 func (u *UsernamePassword) Method() (methodId int) {
@@ -43,7 +43,7 @@ func (u *UsernamePassword) Method() (methodId int) {
 */
 func (u *UsernamePassword) Authenticate(conn net.Conn) (err error) {
 	if u.provider == nil {
-		return errors.New("client provider can't be nil, use SetClientProvider to set it")
+		return errors.New("client provider can't be nil, use SetProvider to set it")
 	}
 
 	var usr, pwd string
@@ -83,6 +83,6 @@ func New() *UsernamePassword {
 	return &UsernamePassword{}
 }
 
-func (u *UsernamePassword) SetClientProvider(provider ClientProvider) {
+func (u *UsernamePassword) SetProvider(provider Provider) {
 	u.provider = provider
 }
