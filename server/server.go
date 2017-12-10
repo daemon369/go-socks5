@@ -23,10 +23,11 @@ type Server struct {
 	// strict mode flag
 	strictMode bool
 	listener   net.Listener
+	auth.AuthenticatorCenter
 }
 
 func New(address string) *Server {
-	return &Server{address: address, strictMode: false}
+	return &Server{address: address, strictMode: false, AuthenticatorCenter: auth.New()}
 }
 
 func (server *Server) String() string {
@@ -84,7 +85,7 @@ func (server *Server) Shutdown() {
 
 func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator) {
 	for i := 0; i < len(methods); i++ {
-		if a, err := auth.Get(int(methods[i])); err == nil {
+		if a, err := server.AuthenticatorCenter.Get(int(methods[i])); err == nil {
 			return a
 		}
 	}
