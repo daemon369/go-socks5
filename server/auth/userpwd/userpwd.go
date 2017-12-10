@@ -18,7 +18,7 @@ type Handler interface {
 type HandlerFunc func(username, password string) bool
 
 func (f HandlerFunc) handle(username, password string) bool {
-	return f.handle(username, password)
+	return f(username, password)
 }
 
 // default handler accept all username/password
