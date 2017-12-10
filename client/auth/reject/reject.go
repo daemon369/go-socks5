@@ -1,7 +1,6 @@
 package reject
 
 import (
-	"errors"
 	"net"
 	"github.com/daemon369/go-socks5/common"
 )
@@ -15,10 +14,6 @@ func (r *Reject) Method() (methodId int) {
 
 func (r *Reject) Client(conn net.Conn) (err error) {
 	return nil
-}
-
-func (r *Reject) Server(conn net.Conn, serial int) (err error) {
-	return errors.New("no available method")
 }
 
 func New() *Reject {

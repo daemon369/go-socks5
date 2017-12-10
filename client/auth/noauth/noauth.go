@@ -16,10 +16,6 @@ func (a *NoAuth) Client(conn net.Conn) (err error) {
 	return nil
 }
 
-func (a *NoAuth) Server(conn net.Conn, serial int) (err error) {
-	return nil
-}
-
 func New() *NoAuth {
 	return &NoAuth{}
 }
