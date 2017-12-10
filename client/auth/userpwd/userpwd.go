@@ -15,6 +15,12 @@ type Provider interface {
 	Provide() (username, password string, err error)
 }
 
+type ProviderFunc func() (username, password string, err error)
+
+func (f ProviderFunc) Provide() (username, password string, err error) {
+	return f()
+}
+
 type UsernamePassword struct {
 	provider Provider
 }
@@ -79,10 +85,14 @@ func (u *UsernamePassword) Authenticate(conn net.Conn) (err error) {
 	return nil
 }
 
-func New() *UsernamePassword {
-	return &UsernamePassword{}
-}
-
 func (u *UsernamePassword) SetProvider(provider Provider) {
 	u.provider = provider
+}
+
+func (u *UsernamePassword) SetProviderFunc(f func() (username, password string, err error)) {
+	u.provider = ProviderFunc(f)
+}
+
+func New() *UsernamePassword {
+	return &UsernamePassword{}
 }
