@@ -11,21 +11,21 @@ const (
 	VERSION = 0x01
 )
 
-type ServerHandler interface {
+type Handler interface {
 	handle(username, password string) bool
 }
 
-type ServerHandlerFunc func(username, password string) bool
+type HandlerFunc func(username, password string) bool
 
-func (f ServerHandlerFunc) handle(username, password string) bool {
+func (f HandlerFunc) handle(username, password string) bool {
 	return f.handle(username, password)
 }
 
-// default server handler accept all username/password
-var defaultServerHandler = ServerHandlerFunc(func(username, password string) bool { return true })
+// default handler accept all username/password
+var defaultHandler = HandlerFunc(func(username, password string) bool { return true })
 
 type UsernamePassword struct {
-	handler ServerHandler
+	handler Handler
 }
 
 func (u *UsernamePassword) Method() (methodId int) {
@@ -93,7 +93,7 @@ func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 		handler := u.handler
 
 		if handler == nil {
-			handler = defaultServerHandler
+			handler = defaultHandler
 		}
 
 		if !handler.handle(username, password) {
@@ -117,10 +117,10 @@ func New() *UsernamePassword {
 	return &UsernamePassword{}
 }
 
-func (u *UsernamePassword) SetServerHandler(handler ServerHandler) {
+func (u *UsernamePassword) SetHandler(handler Handler) {
 	u.handler = handler
 }
 
-func (u *UsernamePassword) SetServerHandlerFunc(f func(username, password string) bool) {
-	u.handler = ServerHandlerFunc(f)
+func (u *UsernamePassword) SetHandlerFunc(f func(username, password string) bool) {
+	u.handler = HandlerFunc(f)
 }

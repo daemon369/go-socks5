@@ -7,8 +7,9 @@ user verification (default handler accept all username/password)
 Usage:
 	import (
 		"strings"
-		"github.com/daemon369/go-socks5/auth"
-		"github.com/daemon369/go-socks5/auth/userpwd"
+		"github.com/daemon369/go-socks5/server"
+		"github.com/daemon369/go-socks5/server/auth"
+		"github.com/daemon369/go-socks5/server/auth/userpwd"
 	)
 	...
 	server := socks5.New(":1080")
