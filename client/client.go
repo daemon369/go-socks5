@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 	"github.com/daemon369/go-socks5/address"
-	"github.com/daemon369/go-socks5/auth"
+	"github.com/daemon369/go-socks5/client/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/common"
 )

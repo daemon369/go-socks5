@@ -9,10 +9,10 @@ import (
 	"os"
 	"strconv"
 	"github.com/daemon369/go-socks5/address"
-	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/cmd"
 	"github.com/daemon369/go-socks5/cmd/connect"
 	"github.com/daemon369/go-socks5/common"
+	"github.com/daemon369/go-socks5/server/auth"
 )
 
 var logger = log.New(os.Stderr, "Server: ", log.LstdFlags)

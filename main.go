@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"strings"
-	"github.com/daemon369/go-socks5/auth/noauth"
-	"github.com/daemon369/go-socks5/auth/userpwd"
-	"github.com/daemon369/go-socks5/auth"
 	"github.com/daemon369/go-socks5/server"
+	"github.com/daemon369/go-socks5/server/auth"
+	"github.com/daemon369/go-socks5/server/auth/noauth"
+	"github.com/daemon369/go-socks5/server/auth/userpwd"
 )
 
 func main() {

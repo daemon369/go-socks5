@@ -3,7 +3,7 @@ package auth
 import (
 	"errors"
 	"net"
-	"github.com/daemon369/go-socks5/auth/reject"
+	"github.com/daemon369/go-socks5/server/auth/reject"
 )
 
 func init() {

@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 	"testing"
-	"github.com/daemon369/go-socks5/auth/noauth"
 	"github.com/daemon369/go-socks5/address"
+	"github.com/daemon369/go-socks5/client/auth/noauth"
 )
 
 func Test_client(t *testing.T) {
