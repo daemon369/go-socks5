@@ -17,7 +17,7 @@ import (
 
 var logger = log.New(os.Stderr, "Server: ", log.LstdFlags)
 
-type Server struct {
+type Server struct { // TODO change to interface
 	// server listen address
 	address string
 	// strict mode flag
