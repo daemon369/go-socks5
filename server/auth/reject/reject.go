@@ -6,17 +6,17 @@ import (
 	"github.com/daemon369/go-socks5/common"
 )
 
-type Reject struct {
+type reject struct {
 }
 
-func (r *Reject) Method() (methodId int) {
+func (r *reject) Method() (methodId int) {
 	return common.NoAcceptable
 }
 
-func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
+func (r *reject) Authenticate(conn net.Conn, serial int) (err error) {
 	return errors.New("no available method")
 }
 
-func New() *Reject {
-	return &Reject{}
+func New() *reject {
+	return &reject{}
 }

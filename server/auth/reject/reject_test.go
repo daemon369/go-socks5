@@ -6,7 +6,7 @@ import (
 )
 
 func Test_reject(t *testing.T) {
-	a := Reject{}
+	a := reject{}
 	fmt.Println(a.Method())
 }
 
