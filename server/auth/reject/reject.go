@@ -13,7 +13,7 @@ func (r *Reject) Method() (methodId int) {
 	return common.NoAcceptable
 }
 
-func (r *Reject) Server(conn net.Conn, serial int) (err error) {
+func (r *Reject) Authenticate(conn net.Conn, serial int) (err error) {
 	return errors.New("no available method")
 }
 

@@ -39,7 +39,7 @@ func Test_UsernamePasswordHandlerFuc(t *testing.T) {
 	ch := make(chan error, 1)
 
 	go func(c net.Conn, ch chan error) {
-		ch <- u.Server(c, 0)
+		ch <- u.Authenticate(c, 0)
 	}(c.Reverse(), ch)
 
 	type data struct {

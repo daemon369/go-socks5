@@ -50,7 +50,7 @@ func (u *UsernamePassword) Method() (methodId int) {
 	|  1 |   1    |
 	+----+--------+
 */
-func (u *UsernamePassword) Server(conn net.Conn, serial int) (err error) {
+func (u *UsernamePassword) Authenticate(conn net.Conn, serial int) (err error) {
 
 	for {
 		buf := make([]byte, 2)
