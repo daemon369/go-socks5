@@ -41,7 +41,7 @@ func (u *UsernamePassword) Method() (methodId int) {
 	|  1 |   1    |
 	+----+--------+
 */
-func (u *UsernamePassword) Client(conn net.Conn) (err error) {
+func (u *UsernamePassword) Authenticate(conn net.Conn) (err error) {
 	if u.provider == nil {
 		return errors.New("client provider can't be nil, use SetClientProvider to set it")
 	}

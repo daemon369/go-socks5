@@ -12,7 +12,7 @@ func (r *Reject) Method() (methodId int) {
 	return common.NoAcceptable
 }
 
-func (r *Reject) Client(conn net.Conn) (err error) {
+func (r *Reject) Authenticate(conn net.Conn) (err error) {
 	return nil
 }
 

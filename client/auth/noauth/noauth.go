@@ -12,7 +12,7 @@ func (a *NoAuth) Method() (methodId int) {
 	return common.NoAuth
 }
 
-func (a *NoAuth) Client(conn net.Conn) (err error) {
+func (a *NoAuth) Authenticate(conn net.Conn) (err error) {
 	return nil
 }
 
