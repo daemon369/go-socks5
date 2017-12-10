@@ -85,7 +85,7 @@ func (server *Server) Shutdown() {
 
 func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator) {
 	for i := 0; i < len(methods); i++ {
-		if a, err := server.AuthenticatorCenter.Get(int(methods[i])); err == nil {
+		if a, err := server.Get(int(methods[i])); err == nil {
 			return a
 		}
 	}

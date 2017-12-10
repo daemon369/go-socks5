@@ -11,7 +11,7 @@ import (
 func main() {
 	srv := server.New(":1080")
 
-	srv.AuthenticatorCenter.Register(noauth.New())
+	srv.Register(noauth.New())
 	u := userpwd.New()
 	u.SetHandlerFunc(func(username, password string) bool {
 		if strings.Compare("daemon", username) == 0 && strings.Compare("123456", password) == 0 {
@@ -20,7 +20,7 @@ func main() {
 			return false
 		}
 	})
-	srv.AuthenticatorCenter.Register(u)
+	srv.Register(u)
 
 	fmt.Println(srv)
 	srv.Serve()
