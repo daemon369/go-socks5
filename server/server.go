@@ -17,32 +17,28 @@ import (
 
 var logger = log.New(os.Stderr, "Server: ", log.LstdFlags)
 
-type Server struct { // TODO change to interface
+type Server interface {
+	auth.AuthenticatorCenter
+	Serve()
+	Shutdown()
+}
+
+type server struct {
 	// server listen address
-	address string
-	// strict mode flag
-	strictMode bool
-	listener   net.Listener
+	address  string
+	listener net.Listener
 	auth.AuthenticatorCenter
 }
 
-func New(address string) *Server {
-	return &Server{address: address, strictMode: false, AuthenticatorCenter: auth.New()}
+func New(address string) Server {
+	return &server{address: address, AuthenticatorCenter: auth.New()}
 }
 
-func (server *Server) String() string {
+func (server *server) String() string {
 	return fmt.Sprintf("[address: %v]", server.address)
 }
 
-func (server *Server) SetStrictMode(strict bool) {
-	server.strictMode = strict
-}
-
-func (server *Server) GetStrictMode() bool {
-	return server.strictMode
-}
-
-func (server *Server) Serve() {
+func (server *server) Serve() {
 
 	logger.Printf("Serves at %s", server.address)
 
@@ -77,13 +73,13 @@ func (server *Server) Serve() {
 	logger.Printf("server[%v] shutdown", server)
 }
 
-func (server *Server) Shutdown() {
+func (server *server) Shutdown() {
 	if server.listener != nil {
 		server.listener.Close()
 	}
 }
 
-func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator) {
+func (server *server) chooseAuthenticator(methods []byte) (a auth.Authenticator) {
 	for i := 0; i < len(methods); i++ {
 		if a, err := server.Get(int(methods[i])); err == nil {
 			return a
@@ -94,7 +90,7 @@ func (server *Server) chooseAuthenticator(methods []byte) (a auth.Authenticator)
 }
 
 type session struct {
-	server     *Server
+	server     *server
 	serial     int
 	clientConn net.Conn
 	targetConn net.Conn
@@ -263,15 +259,6 @@ func handle(session *session) (err error) {
 		}
 
 		logger.Printf("%d: cmd: %d", serial, command)
-
-		if 0 != buf[2] {
-			err = errors.New(string(serial) + ": reserved byte must be zero: " + string(buf[2]))
-			logger.Println(err)
-			if session.server.strictMode {
-				rspCode = common.ServerError
-				break
-			}
-		}
 
 		var addr *address.Address
 		addr, err = address.ReadAddress(conn)
