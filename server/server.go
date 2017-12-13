@@ -24,10 +24,10 @@ type Server interface {
 }
 
 type server struct {
-	// server listen address
-	address  string
-	listener net.Listener
+	address   string
+	listener  net.Listener
 	auth.AuthenticatorCenter
+	isRunning bool
 }
 
 func New(address string) Server {
@@ -49,13 +49,21 @@ func (server *server) Serve() {
 		return
 	}
 
+	server.isRunning = true
 	server.listener = listener
 
-	defer func() { server.Shutdown() }()
+	defer func() {
+		server.isRunning = false
+		server.listener = nil
+	}()
 
 	var serial = 0
 
 	for {
+		if !server.isRunning {
+			break
+		}
+
 		conn, err := listener.Accept()
 
 		if err != nil {
@@ -74,6 +82,7 @@ func (server *server) Serve() {
 }
 
 func (server *server) Shutdown() {
+	server.isRunning = false
 	if server.listener != nil {
 		server.listener.Close()
 	}
